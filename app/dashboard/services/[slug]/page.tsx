@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { MOCK_SERVICES } from "@/lib/mock-services";
 import { notFound } from "next/navigation";
+import BuyButton from "./buy-button";
 
 export default function ServiceDetailPage({
   params,
@@ -30,15 +31,11 @@ export default function ServiceDetailPage({
         <h1 className="text-lg font-semibold text-slate-900">
           {item.service} - {item.flag} {item.country}
         </h1>
-        <p className="mt-1 text-2xl font-bold text-slate-900">
-          ${(item.priceCents / 100).toFixed(2)}
+        <p className="mt-1 text-sm text-slate-400">
+          Price is confirmed live from the provider right before purchase.
         </p>
 
-        <div className="mt-5 rounded-lg border border-dashed border-slate-300 p-4 text-sm text-slate-500">
-          Purchasing a real number here connects to the 5SIM API next -
-          this screen is ready, the buy button just needs the live
-          provider wired in.
-        </div>
+        <BuyButton slug={item.slug} />
       </div>
     </div>
   );

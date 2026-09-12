@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { PackageOpen } from "lucide-react";
+import Link from "next/link";
 
 export default async function NumbersPage() {
   const supabase = createClient();
@@ -28,9 +29,10 @@ export default async function NumbersPage() {
   return (
     <div className="space-y-3">
       {orders.map((order) => (
-        <div
+        <Link
           key={order.id}
-          className="rounded-xl border border-slate-200 bg-white p-4"
+          href={`/dashboard/numbers/${order.id}`}
+          className="block rounded-xl border border-slate-200 bg-white p-4"
         >
           <div className="flex items-center justify-between">
             <p className="font-medium text-slate-900">
@@ -46,7 +48,7 @@ export default async function NumbersPage() {
               Code: {order.sms_code}
             </p>
           )}
-        </div>
+        </Link>
       ))}
     </div>
   );
