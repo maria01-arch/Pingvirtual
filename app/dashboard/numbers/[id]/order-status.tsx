@@ -24,8 +24,10 @@ export default function OrderStatus({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  const needsPolling = status === "pending" || (status === "received" && !code);
+
   useEffect(() => {
-    if (status !== "pending") return;
+    if (!needsPolling) return;
 
     const interval = setInterval(() => {
       startTransition(async () => {
@@ -41,7 +43,7 @@ export default function OrderStatus({
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [status, orderId]);
+  }, [needsPolling, orderId]);
 
   function handleCancel() {
     startTransition(async () => {
@@ -81,7 +83,7 @@ export default function OrderStatus({
       </p>
 
       <div className="mt-5">
-        {status === "pending" && !code && (
+        {needsPolling && !code && (
           <div className="flex flex-col items-center gap-2 text-slate-500">
             <Loader2 size={22} className="animate-spin text-brand" />
             <p className="text-sm">Waiting for the SMS code...</p>
@@ -126,7 +128,7 @@ export default function OrderStatus({
           </div>
         )}
 
-        {status !== "pending" && status !== "cancelled" && !code && (
+        {status !== "pending" && status !== "cancelled" && !code && status !== "received" && (
           <p className="text-sm text-amber-600">
             Unexpected status: "{status}". Screenshot this and send it over.
           </p>
@@ -134,10 +136,10 @@ export default function OrderStatus({
       </div>
 
       <p className="mt-4 text-[11px] text-slate-300">
-        debug: status={status} | polling={String(status === "pending")}
+        debug: status={status} | code={code ?? "none"} | polling={String(needsPolling)}
       </p>
 
-      {status === "pending" && (
+      {needsPolling && (
         <button
           onClick={handleManualCheck}
           disabled={isPending}

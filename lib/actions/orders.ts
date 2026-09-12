@@ -104,14 +104,15 @@ export async function refreshOrderStatus(orderId: string) {
 
   const { data: dbOrder } = await supabase
     .from("orders")
-    .select("provider_order_id, status, cost_cents, service, country")
+    .select("provider_order_id, status, cost_cents, service, country, sms_code")
     .eq("id", orderId)
     .eq("user_id", user.id)
     .single();
 
   if (!dbOrder) return { error: "Order not found." };
-  if (dbOrder.status === "received" || dbOrder.status === "cancelled") {
-    return { error: null }; // already settled, nothing to poll
+  if (dbOrder.status === "cancelled") return { error: null };
+  if (dbOrder.status === "received" && dbOrder.sms_code) {
+    return { error: null }; // already fully settled, nothing to poll
   }
 
   let liveOrder;
@@ -121,9 +122,14 @@ export async function refreshOrderStatus(orderId: string) {
     return { error: err.message };
   }
 
-  const smsCode = liveOrder.sms?.[0]?.code ?? null;
+  // Preserve an already-captured code if this particular poll comes back
+  // empty - 5SIM can report status RECEIVED slightly before the code text
+  // is populated, and we never want to overwrite a good code with nothing.
+  const freshCode = liveOrder.sms?.[0]?.code ?? null;
+  const smsCode = freshCode || dbOrder.sms_code || null;
+
   const newStatus =
-    liveOrder.status === "RECEIVED"
+    liveOrder.status === "RECEIVED" && smsCode
       ? "received"
       : liveOrder.status === "CANCELED" || liveOrder.status === "TIMEOUT"
       ? "cancelled"
