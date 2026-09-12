@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { Loader2, Copy, X } from "lucide-react";
+import Link from "next/link";
+import { Loader2, Copy, X, RotateCcw, RefreshCw } from "lucide-react";
 import { refreshOrderStatus, cancelOrder } from "@/lib/actions/orders";
 
 type Props = {
@@ -19,6 +20,7 @@ export default function OrderStatus({
 }: Props) {
   const [status, setStatus] = useState(initialStatus);
   const [code, setCode] = useState(initialCode);
+  const [wasRefunded, setWasRefunded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -34,6 +36,7 @@ export default function OrderStatus({
         }
         if (result.status) setStatus(result.status);
         if (result.smsCode) setCode(result.smsCode);
+        if (result.refunded) setWasRefunded(true);
       });
     }, 5000);
 
@@ -48,11 +51,26 @@ export default function OrderStatus({
         return;
       }
       setStatus("cancelled");
+      setWasRefunded(true);
     });
   }
 
   function copyCode() {
     if (code) navigator.clipboard.writeText(code);
+  }
+
+  function handleManualCheck() {
+    setError(null);
+    startTransition(async () => {
+      const result = await refreshOrderStatus(orderId);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      if (result.status) setStatus(result.status);
+      if (result.smsCode) setCode(result.smsCode);
+      if (result.refunded) setWasRefunded(true);
+    });
   }
 
   return (
@@ -87,16 +105,58 @@ export default function OrderStatus({
           </div>
         )}
 
-        {status === "cancelled" && (
-          <p className="text-sm text-red-500">This order was cancelled.</p>
+        {status === "cancelled" && !code && (
+          <div>
+            <p className="text-sm text-red-500">
+              This number never delivered a code (the provider timed it out
+              or the number was already in use elsewhere).
+            </p>
+            {wasRefunded && (
+              <p className="mt-1 text-sm font-medium text-green-600">
+                You've been refunded automatically.
+              </p>
+            )}
+            <Link
+              href="/dashboard/services"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
+            >
+              <RotateCcw size={15} />
+              Try Another Number
+            </Link>
+          </div>
+        )}
+
+        {status !== "pending" && status !== "cancelled" && !code && (
+          <p className="text-sm text-amber-600">
+            Unexpected status: "{status}". Screenshot this and send it over.
+          </p>
         )}
       </div>
+
+      <p className="mt-4 text-[11px] text-slate-300">
+        debug: status={status} | polling={String(status === "pending")}
+      </p>
+
+      {status === "pending" && (
+        <button
+          onClick={handleManualCheck}
+          disabled={isPending}
+          className="mt-6 flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+        >
+          {isPending ? (
+            <Loader2 size={15} className="animate-spin" />
+          ) : (
+            <RefreshCw size={15} />
+          )}
+          Check Now
+        </button>
+      )}
 
       {status === "pending" && (
         <button
           onClick={handleCancel}
           disabled={isPending}
-          className="mt-6 flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 py-2.5 text-sm font-medium text-slate-500 hover:bg-slate-50 disabled:opacity-60"
+          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 py-2.5 text-sm font-medium text-slate-500 hover:bg-slate-50 disabled:opacity-60"
         >
           <X size={15} />
           Cancel & Refund
