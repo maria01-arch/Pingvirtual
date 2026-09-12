@@ -104,7 +104,7 @@ export async function refreshOrderStatus(orderId: string) {
 
   const { data: dbOrder } = await supabase
     .from("orders")
-    .select("provider_order_id, status")
+    .select("provider_order_id, status, cost_cents, service, country")
     .eq("id", orderId)
     .eq("user_id", user.id)
     .single();
@@ -134,8 +134,22 @@ export async function refreshOrderStatus(orderId: string) {
     .update({ status: newStatus, sms_code: smsCode, updated_at: new Date().toISOString() })
     .eq("id", orderId);
 
+  // The provider timed the order out or cancelled it on their end (e.g. the
+  // number was already used elsewhere and never delivered a code). Since
+  // this wasn't the user's choice, auto-refund - but only once, on the
+  // transition into "cancelled" (dbOrder.status was still "pending" here).
+  let refunded = false;
+  if (newStatus === "cancelled" && dbOrder.status === "pending") {
+    await supabase.rpc("refund_wallet", {
+      p_amount_cents: dbOrder.cost_cents,
+      p_description: `${dbOrder.service} - ${dbOrder.country} (auto-refund: no code received)`,
+    });
+    refunded = true;
+  }
+
   revalidatePath("/dashboard/numbers");
-  return { error: null, status: newStatus, smsCode };
+  revalidatePath("/dashboard/wallet");
+  return { error: null, status: newStatus, smsCode, refunded };
 }
 
 export async function cancelOrder(orderId: string) {
