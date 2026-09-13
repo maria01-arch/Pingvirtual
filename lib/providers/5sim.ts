@@ -50,12 +50,33 @@ export type CountryInfo = {
   iso: string; // 2-letter code, for flag display
 };
 
+// Fallback if /guest/countries returns empty/unexpected - these slugs are
+// known-good (usa and england were confirmed working via real purchases).
+const FALLBACK_COUNTRIES: CountryInfo[] = [
+  { slug: "usa", name: "United States", iso: "us" },
+  { slug: "england", name: "United Kingdom", iso: "gb" },
+  { slug: "nigeria", name: "Nigeria", iso: "ng" },
+  { slug: "russia", name: "Russia", iso: "ru" },
+  { slug: "ukraine", name: "Ukraine", iso: "ua" },
+  { slug: "kazakhstan", name: "Kazakhstan", iso: "kz" },
+  { slug: "indonesia", name: "Indonesia", iso: "id" },
+  { slug: "philippines", name: "Philippines", iso: "ph" },
+  { slug: "vietnam", name: "Vietnam", iso: "vn" },
+  { slug: "india", name: "India", iso: "in" },
+  { slug: "brazil", name: "Brazil", iso: "br" },
+  { slug: "mexico", name: "Mexico", iso: "mx" },
+  { slug: "france", name: "France", iso: "fr" },
+  { slug: "germany", name: "Germany", iso: "de" },
+  { slug: "poland", name: "Poland", iso: "pl" },
+  { slug: "canada", name: "Canada", iso: "ca" },
+];
+
 export async function getCountries(): Promise<CountryInfo[]> {
   const res = await fetch(`${BASE_URL}/guest/countries`, {
     headers: authHeaders(),
     next: { revalidate: 3600 }, // country list barely changes - cache 1hr
   });
-  if (!res.ok) return [];
+  if (!res.ok) return FALLBACK_COUNTRIES;
 
   const data = await res.json();
   const countries: CountryInfo[] = [];
@@ -71,7 +92,7 @@ export async function getCountries(): Promise<CountryInfo[]> {
     });
   }
 
-  return countries;
+  return countries.length > 0 ? countries : FALLBACK_COUNTRIES;
 }
 
 export type CountryPrice = {
@@ -81,39 +102,41 @@ export type CountryPrice = {
   count: number;
 };
 
-// Live per-country pricing for one product, across every country 5SIM
-// offers it in. This is what replaces a hardcoded country list.
+async function getCountryProductsCached(country: string) {
+  const res = await fetch(`${BASE_URL}/guest/products/${country}/any`, {
+    headers: authHeaders(),
+    next: { revalidate: 120 }, // short cache - prices/stock shift often
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+// Live per-country pricing for one product, built on the same
+// /guest/products/{country}/any endpoint that purchases already use
+// successfully - not the separate bulk /guest/prices endpoint, which
+// returned an unverified/incorrect shape.
 export async function getPricesForProduct(
   product: string
 ): Promise<CountryPrice[]> {
-  const res = await fetch(`${BASE_URL}/guest/prices?product=${product}`, {
-    headers: authHeaders(),
-    next: { revalidate: 120 }, // prices shift often - short cache
-  });
-  if (!res.ok) return [];
+  const countries = await getCountries();
 
-  const data = await res.json();
+  const settled = await Promise.allSettled(
+    countries.map(async (c): Promise<CountryPrice | null> => {
+      const data = await getCountryProductsCached(c.slug);
+      const entry = data?.[product];
+      if (!entry || !entry.Qty || entry.Qty < 1) return null;
+      return {
+        countrySlug: c.slug,
+        operator: "any",
+        cost: entry.Price,
+        count: entry.Qty,
+      };
+    })
+  );
+
   const results: CountryPrice[] = [];
-
-  for (const countrySlug of Object.keys(data)) {
-    const operators = data[countrySlug]?.[product];
-    if (!operators) continue;
-
-    // Prefer the "any" operator if it's in stock; otherwise take whichever
-    // named operator is cheapest and actually has numbers available.
-    let best: CountryPrice | null = null;
-    for (const operator of Object.keys(operators)) {
-      const { cost, count } = operators[operator];
-      if (!count || count < 1) continue;
-      if (operator === "any") {
-        best = { countrySlug, operator, cost, count };
-        break;
-      }
-      if (!best || cost < best.cost) {
-        best = { countrySlug, operator, cost, count };
-      }
-    }
-    if (best) results.push(best);
+  for (const r of settled) {
+    if (r.status === "fulfilled" && r.value) results.push(r.value);
   }
 
   return results.sort((a, b) => a.cost - b.cost);
