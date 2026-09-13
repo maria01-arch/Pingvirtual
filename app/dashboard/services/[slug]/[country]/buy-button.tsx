@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { purchaseNumber } from "@/lib/actions/orders";
 
-export default function BuyButton({ slug }: { slug: string }) {
+export default function BuyButton({
+  product,
+  country,
+}: {
+  product: string;
+  country: string;
+}) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -13,7 +19,7 @@ export default function BuyButton({ slug }: { slug: string }) {
   function handleBuy() {
     setError(null);
     startTransition(async () => {
-      const result = await purchaseNumber(slug);
+      const result = await purchaseNumber(product, country);
       if (result.error) {
         setError(result.error);
         return;

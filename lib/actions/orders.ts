@@ -6,11 +6,12 @@ import {
   checkActivation,
   cancelActivation,
   getProductPrice,
+  getCountries,
 } from "@/lib/providers/5sim";
-import { MOCK_SERVICES, MARKUP_MULTIPLIER } from "@/lib/mock-services";
+import { POPULAR_SERVICES, MARKUP_MULTIPLIER } from "@/lib/services-catalog";
 import { revalidatePath } from "next/cache";
 
-export async function purchaseNumber(slug: string) {
+export async function purchaseNumber(product: string, country: string) {
   const supabase = createClient();
   const {
     data: { user },
@@ -18,16 +19,13 @@ export async function purchaseNumber(slug: string) {
 
   if (!user) return { error: "Not logged in." };
 
-  const listing = MOCK_SERVICES.find((s) => s.slug === slug);
-  if (!listing) return { error: "Unknown service." };
+  const service = POPULAR_SERVICES.find((s) => s.product === product);
+  if (!service) return { error: "Unknown service." };
 
   // 1. Get the live price from 5SIM (raw provider cost, in dollars).
   let priceInfo;
   try {
-    priceInfo = await getProductPrice(
-      listing.fivesimCountry,
-      listing.fivesimProduct
-    );
+    priceInfo = await getProductPrice(country, product);
   } catch (err: any) {
     return { error: `Could not reach 5SIM: ${err.message}` };
   }
@@ -52,15 +50,19 @@ export async function purchaseNumber(slug: string) {
   // 3. Actually buy the number from 5SIM.
   let order;
   try {
-    order = await buyActivation(listing.fivesimCountry, listing.fivesimProduct);
+    order = await buyActivation(country, product);
   } catch (err: any) {
     return { error: `Purchase failed: ${err.message}` };
   }
 
   // 4. Deduct the user's wallet balance atomically.
+  const countries = await getCountries();
+  const countryName =
+    countries.find((c) => c.slug === country)?.name ?? country;
+
   const { error: deductError } = await supabase.rpc("deduct_balance", {
     p_amount_cents: costCents,
-    p_description: `${listing.service} - ${listing.country}`,
+    p_description: `${service.label} - ${countryName}`,
   });
 
   if (deductError) {
@@ -77,8 +79,8 @@ export async function purchaseNumber(slug: string) {
       user_id: user.id,
       provider: "5sim",
       provider_order_id: String(order.id),
-      service: listing.service,
-      country: listing.country,
+      service: service.label,
+      country: countryName,
       phone_number: order.phone,
       status: "pending",
       cost_cents: costCents,
