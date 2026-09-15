@@ -1,5 +1,5 @@
 import { getProductPrice as get5simPrice, getCountries as get5simCountries } from "./providers/5sim";
-import { findServiceCode, getPricesForService, getCountriesList } from "./providers/herosms";
+import { getPricesForService, getCountriesList } from "./providers/herosms";
 import { usdToKobo } from "./currency";
 import { isoToFlagEmoji } from "./flag";
 import { MARKUP_MULTIPLIER } from "./services-catalog";
@@ -13,17 +13,18 @@ export type CountryOption = {
   count: number;
 };
 
-// WhatsApp + USA stays on 5SIM (it's reliable there and already tested).
-// Every other product/country combination routes to HeroSMS.
-export function routeFor(product: string, country: string): "5sim" | "herosms" {
-  return product === "whatsapp" && country === "usa" ? "5sim" : "herosms";
-}
-
-export async function getCountryOptions(product: string): Promise<CountryOption[]> {
+// serviceCode is the HeroSMS code (e.g. "wa" for WhatsApp) - it's the
+// canonical identifier now, since the Services tab lists HeroSMS's live
+// catalog directly. WhatsApp gets one extra 5SIM-backed USA option because
+// that specific combination is already proven reliable.
+export async function getCountryOptions(
+  serviceCode: string,
+  serviceLabel: string
+): Promise<CountryOption[]> {
   const options: CountryOption[] = [];
+  const isWhatsApp = serviceLabel.toLowerCase() === "whatsapp";
 
-  // 1. The one 5SIM-backed option, only for WhatsApp.
-  if (product === "whatsapp") {
+  if (isWhatsApp) {
     try {
       const price = await get5simPrice("usa", "whatsapp");
       if (price && price.count > 0) {
@@ -39,36 +40,30 @@ export async function getCountryOptions(product: string): Promise<CountryOption[
         });
       }
     } catch {
-      // If 5SIM is briefly unreachable, just skip this one option -
-      // HeroSMS options below still render.
+      // 5SIM briefly unreachable - HeroSMS options below still render.
     }
   }
 
-  // 2. Everything else - all countries HeroSMS has this service in stock in.
   try {
-    const serviceCode = await findServiceCode(product);
-    if (serviceCode) {
-      const [prices, countries] = await Promise.all([
-        getPricesForService(serviceCode),
-        getCountriesList(),
-      ]);
-      const countryMap = new Map(countries.map((c) => [c.id, c.name]));
+    const [prices, countries] = await Promise.all([
+      getPricesForService(serviceCode),
+      getCountriesList(),
+    ]);
+    const countryMap = new Map(countries.map((c) => [c.id, c.name]));
 
-      for (const p of prices) {
-        if (product === "whatsapp" && p.countryId === "usa") continue; // avoid duplicate
-        options.push({
-          countryParam: p.countryId,
-          provider: "herosms",
-          name: countryMap.get(p.countryId) ?? p.countryId,
-          flag: "🌍",
-          priceKobo: Math.round(usdToKobo(p.cost) * MARKUP_MULTIPLIER),
-          count: p.count,
-        });
-      }
+    for (const p of prices) {
+      if (isWhatsApp && p.countryId === "usa") continue; // avoid duplicate
+      options.push({
+        countryParam: p.countryId,
+        provider: "herosms",
+        name: countryMap.get(p.countryId) ?? p.countryId,
+        flag: "🌍",
+        priceKobo: Math.round(usdToKobo(p.cost) * MARKUP_MULTIPLIER),
+        count: p.count,
+      });
     }
   } catch {
-    // If HeroSMS is briefly unreachable, whatever 5SIM options we got above
-    // still render rather than showing a fully empty list.
+    // HeroSMS briefly unreachable - whatever 5SIM option we got still renders.
   }
 
   return options.sort((a, b) => a.priceKobo - b.priceKobo);

@@ -13,18 +13,18 @@ import {
   checkStatus as checkHero,
   cancelActivation as cancelHero,
   finishActivation as finishHero,
-  findServiceCode,
   getPricesForService,
   getCountriesList,
+  getServicesList,
 } from "@/lib/providers/herosms";
-import { POPULAR_SERVICES, MARKUP_MULTIPLIER } from "@/lib/services-catalog";
+import { MARKUP_MULTIPLIER } from "@/lib/services-catalog";
 import { usdToKobo } from "@/lib/currency";
 import { revalidatePath } from "next/cache";
 
 type Provider = "5sim" | "herosms";
 
 export async function purchaseNumber(
-  product: string,
+  serviceCode: string,
   country: string,
   provider: Provider
 ) {
@@ -35,15 +35,15 @@ export async function purchaseNumber(
 
   if (!user) return { error: "Not logged in." };
 
-  const service = POPULAR_SERVICES.find((s) => s.product === product);
-  if (!service) return { error: "Unknown service." };
-
-  // 1. Get the live price (raw provider cost, in USD) and a display name.
+  // 1. Get the live price (raw provider cost, in USD), display name, and
+  // country name.
   let rawCostUsd: number;
   let countryName = country;
+  let serviceLabel = serviceCode;
 
   if (provider === "5sim") {
-    const priceInfo = await get5simPrice(country, product).catch(() => null);
+    serviceLabel = "WhatsApp"; // the only case 5SIM is ever used for
+    const priceInfo = await get5simPrice(country, "whatsapp").catch(() => null);
     if (!priceInfo || priceInfo.count < 1) {
       return { error: "No numbers available for this service right now." };
     }
@@ -51,8 +51,9 @@ export async function purchaseNumber(
     const countries = await get5simCountries();
     countryName = countries.find((c) => c.slug === country)?.name ?? country;
   } else {
-    const serviceCode = await findServiceCode(product);
-    if (!serviceCode) return { error: "Service not found on HeroSMS." };
+    const services = await getServicesList();
+    serviceLabel = services.find((s) => s.code === serviceCode)?.name ?? serviceCode;
+
     const prices = await getPricesForService(serviceCode);
     const match = prices.find((p) => p.countryId === country);
     if (!match || match.count < 1) {
@@ -82,12 +83,11 @@ export async function purchaseNumber(
 
   try {
     if (provider === "5sim") {
-      const order = await buy5sim(country, product);
+      const order = await buy5sim(country, "whatsapp");
       providerOrderId = String(order.id);
       phoneNumber = order.phone;
     } else {
-      const serviceCode = await findServiceCode(product);
-      const order = await buyHero(serviceCode!, country);
+      const order = await buyHero(serviceCode, country);
       providerOrderId = order.activationId;
       phoneNumber = order.phoneNumber;
     }
@@ -98,7 +98,7 @@ export async function purchaseNumber(
   // 4. Deduct the user's wallet balance atomically.
   const { error: deductError } = await supabase.rpc("deduct_balance", {
     p_amount_kobo: costKobo,
-    p_description: `${service.label} - ${countryName}`,
+    p_description: `${serviceLabel} - ${countryName}`,
   });
 
   if (deductError) {
@@ -116,7 +116,7 @@ export async function purchaseNumber(
       user_id: user.id,
       provider,
       provider_order_id: providerOrderId,
-      service: service.label,
+      service: serviceLabel,
       country: countryName,
       phone_number: phoneNumber,
       status: "pending",

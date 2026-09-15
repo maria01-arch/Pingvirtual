@@ -12,12 +12,20 @@ function apiKey() {
   return key;
 }
 
-async function call(params: Record<string, string>): Promise<string> {
+async function call(
+  params: Record<string, string>,
+  revalidateSeconds?: number
+): Promise<string> {
   const url = new URL(BASE_URL);
   url.searchParams.set("api_key", apiKey());
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
 
-  const res = await fetch(url.toString(), { cache: "no-store" });
+  const res = await fetch(
+    url.toString(),
+    revalidateSeconds
+      ? { next: { revalidate: revalidateSeconds } }
+      : { cache: "no-store" }
+  );
   const text = await res.text();
 
   if (!res.ok) throw new Error(`HeroSMS HTTP ${res.status}: ${text}`);
@@ -30,8 +38,11 @@ async function call(params: Record<string, string>): Promise<string> {
 }
 
 // Tries JSON first (V2 endpoints), falls back to raw text (legacy endpoints).
-async function callJsonOrText(params: Record<string, string>): Promise<any> {
-  const text = await call(params);
+async function callJsonOrText(
+  params: Record<string, string>,
+  revalidateSeconds?: number
+): Promise<any> {
+  const text = await call(params, revalidateSeconds);
   try {
     return JSON.parse(text);
   } catch {
@@ -50,7 +61,7 @@ export async function getBalance(): Promise<number> {
 export type HeroSmsService = { code: string; name: string };
 
 export async function getServicesList(): Promise<HeroSmsService[]> {
-  const data = await callJsonOrText({ action: "getServicesList" });
+  const data = await callJsonOrText({ action: "getServicesList" }, 3600); // 1hr cache - catalog barely changes
   const list = data?.services ?? data;
   if (!Array.isArray(list)) return [];
   return list.map((s: any) => ({
@@ -62,7 +73,7 @@ export async function getServicesList(): Promise<HeroSmsService[]> {
 export type HeroSmsCountry = { id: string; name: string };
 
 export async function getCountriesList(): Promise<HeroSmsCountry[]> {
-  const data = await callJsonOrText({ action: "getCountries" });
+  const data = await callJsonOrText({ action: "getCountries" }, 3600);
   const entries = Array.isArray(data) ? data : Object.values(data ?? {});
   return entries.map((c: any) => ({
     id: String(c.id),
@@ -95,7 +106,10 @@ export type HeroSmsPrice = { countryId: string; cost: number; count: number };
 export async function getPricesForService(
   serviceCode: string
 ): Promise<HeroSmsPrice[]> {
-  const data = await callJsonOrText({ action: "getPrices", service: serviceCode });
+  const data = await callJsonOrText(
+    { action: "getPrices", service: serviceCode },
+    120 // short cache - prices/stock shift often
+  );
   const results: HeroSmsPrice[] = [];
 
   for (const countryId of Object.keys(data ?? {})) {

@@ -2,21 +2,22 @@ import Link from "next/link";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { notFound } from "next/navigation";
 import { getCountryOptions } from "@/lib/pricing";
-import { POPULAR_SERVICES } from "@/lib/services-catalog";
+import { getServicesList } from "@/lib/providers/herosms";
+import { colorForLabel } from "@/lib/services-catalog";
 import { formatP } from "@/lib/currency";
 
-// The [slug] segment is the service product identifier (e.g. "whatsapp").
-// Country options come live from 5SIM (WhatsApp+USA only) and HeroSMS
-// (everything else) - see lib/pricing.ts for the routing rule.
+// [slug] is the real HeroSMS service code (e.g. "wa"). Country options come
+// live from 5SIM (WhatsApp+USA only) and HeroSMS (everything else).
 export default async function ProductCountriesPage({
   params,
 }: {
   params: { slug: string };
 }) {
-  const service = POPULAR_SERVICES.find((s) => s.product === params.slug);
+  const services = await getServicesList();
+  const service = services.find((s) => s.code === params.slug);
   if (!service) return notFound();
 
-  const options = await getCountryOptions(params.slug);
+  const options = await getCountryOptions(params.slug, service.name);
 
   return (
     <div>
@@ -30,12 +31,12 @@ export default async function ProductCountriesPage({
 
       <div className="mb-4 flex items-center gap-3">
         <div
-          className={`flex h-11 w-11 items-center justify-center rounded-xl text-base font-semibold text-white ${service.colorClass}`}
+          className={`flex h-11 w-11 items-center justify-center rounded-xl text-base font-semibold text-white ${colorForLabel(service.name)}`}
         >
-          {service.label.charAt(0)}
+          {service.name.charAt(0).toUpperCase()}
         </div>
         <h1 className="text-lg font-semibold text-slate-900">
-          {service.label}
+          {service.name}
         </h1>
       </div>
 

@@ -2,8 +2,8 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 import { getProductPrice as get5simPrice, getCountries as get5simCountries } from "@/lib/providers/5sim";
-import { findServiceCode, getPricesForService, getCountriesList } from "@/lib/providers/herosms";
-import { POPULAR_SERVICES, MARKUP_MULTIPLIER } from "@/lib/services-catalog";
+import { getPricesForService, getCountriesList, getServicesList } from "@/lib/providers/herosms";
+import { MARKUP_MULTIPLIER, colorForLabel } from "@/lib/services-catalog";
 import { usdToKobo, formatP } from "@/lib/currency";
 import { isoToFlagEmoji } from "@/lib/flag";
 import BuyButton from "./buy-button";
@@ -15,7 +15,8 @@ export default async function ServiceCountryDetailPage({
   params: { slug: string; country: string };
   searchParams: { provider?: string };
 }) {
-  const service = POPULAR_SERVICES.find((s) => s.product === params.slug);
+  const services = await getServicesList();
+  const service = services.find((s) => s.code === params.slug);
   if (!service) return notFound();
 
   const provider = searchParams.provider === "5sim" ? "5sim" : "herosms";
@@ -27,7 +28,7 @@ export default async function ServiceCountryDetailPage({
 
   if (provider === "5sim") {
     const [priceInfo, countries] = await Promise.all([
-      get5simPrice(params.country, params.slug),
+      get5simPrice(params.country, "whatsapp"),
       get5simCountries(),
     ]);
     if (priceInfo && priceInfo.count > 0) {
@@ -40,20 +41,17 @@ export default async function ServiceCountryDetailPage({
       flag = isoToFlagEmoji(c.iso);
     }
   } else {
-    const serviceCode = await findServiceCode(params.slug);
-    if (serviceCode) {
-      const [prices, countries] = await Promise.all([
-        getPricesForService(serviceCode),
-        getCountriesList(),
-      ]);
-      const match = prices.find((p) => p.countryId === params.country);
-      if (match) {
-        priceKobo = Math.round(usdToKobo(match.cost) * MARKUP_MULTIPLIER);
-        count = match.count;
-      }
-      const c = countries.find((c) => c.id === params.country);
-      if (c) countryName = c.name;
+    const [prices, countries] = await Promise.all([
+      getPricesForService(params.slug),
+      getCountriesList(),
+    ]);
+    const match = prices.find((p) => p.countryId === params.country);
+    if (match) {
+      priceKobo = Math.round(usdToKobo(match.cost) * MARKUP_MULTIPLIER);
+      count = match.count;
     }
+    const c = countries.find((c) => c.id === params.country);
+    if (c) countryName = c.name;
   }
 
   if (priceKobo === null || count < 1) {
@@ -85,12 +83,12 @@ export default async function ServiceCountryDetailPage({
 
       <div className="rounded-xl border border-slate-200 bg-white p-5 text-center">
         <div
-          className={`mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl text-xl font-semibold text-white ${service.colorClass}`}
+          className={`mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl text-xl font-semibold text-white ${colorForLabel(service.name)}`}
         >
-          {service.label.charAt(0)}
+          {service.name.charAt(0).toUpperCase()}
         </div>
         <h1 className="text-lg font-semibold text-slate-900">
-          {service.label} - {flag} {countryName}
+          {service.name} - {flag} {countryName}
         </h1>
         <p className="mt-1 text-2xl font-bold text-slate-900">
           {formatP(priceKobo)}
