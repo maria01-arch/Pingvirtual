@@ -10,18 +10,27 @@ export const POPULAR_LABELS = [
   "PayPal", "Tinder", "Snapchat", "Uber", "Viber", "Line", "WeChat", "Signal",
 ];
 
-const COLOR_PALETTE = [
-  "bg-emerald-500", "bg-sky-500", "bg-blue-600", "bg-red-500",
-  "bg-pink-500", "bg-indigo-500", "bg-orange-500", "bg-purple-600",
-  "bg-teal-500", "bg-rose-500", "bg-cyan-600", "bg-amber-500",
+const GRADIENT_PALETTE = [
+  "from-emerald-400 to-teal-600",
+  "from-sky-400 to-blue-600",
+  "from-blue-500 to-indigo-700",
+  "from-rose-400 to-red-600",
+  "from-pink-400 to-fuchsia-600",
+  "from-indigo-400 to-violet-700",
+  "from-orange-400 to-amber-600",
+  "from-purple-400 to-purple-700",
+  "from-teal-400 to-cyan-700",
+  "from-rose-400 to-pink-600",
+  "from-cyan-400 to-blue-700",
+  "from-amber-300 to-orange-600",
 ];
 
-// Deterministic color per service name, since we can't hand-curate a color
-// for hundreds of live-fetched services.
+// Deterministic gradient per service name, since we can't hand-curate a
+// look for hundreds of live-fetched services.
 export function colorForLabel(label: string): string {
   let hash = 0;
   for (let i = 0; i < label.length; i++) {
     hash = (hash * 31 + label.charCodeAt(i)) >>> 0;
   }
-  return COLOR_PALETTE[hash % COLOR_PALETTE.length];
+  return `bg-gradient-to-br ${GRADIENT_PALETTE[hash % GRADIENT_PALETTE.length]}`;
 }

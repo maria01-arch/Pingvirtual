@@ -6,8 +6,6 @@ import { getServicesList } from "@/lib/providers/herosms";
 import { colorForLabel } from "@/lib/services-catalog";
 import { formatP } from "@/lib/currency";
 
-// [slug] is the real HeroSMS service code (e.g. "wa"). Country options come
-// live from 5SIM (WhatsApp+USA only) and HeroSMS (everything else).
 export default async function ProductCountriesPage({
   params,
 }: {
@@ -41,46 +39,46 @@ export default async function ProductCountriesPage({
         Back to Services
       </Link>
 
-      <div className="mb-4 flex items-center gap-3">
+      <div className="mb-5 flex items-center gap-3">
         <div
-          className={`flex h-11 w-11 items-center justify-center rounded-xl text-base font-semibold text-white ${colorForLabel(service?.name ?? params.slug)}`}
+          className={`flex h-12 w-12 items-center justify-center rounded-2xl text-lg font-semibold text-white shadow-md ${colorForLabel(service?.name ?? params.slug)}`}
         >
           {(service?.name ?? params.slug).charAt(0).toUpperCase()}
         </div>
-        <h1 className="text-lg font-semibold text-slate-900">
+        <h1 className="text-xl font-semibold text-slate-900">
           {service?.name ?? params.slug}
         </h1>
       </div>
 
       {loadError ? (
-        <p className="rounded-xl border border-dashed border-red-300 bg-red-50 p-6 text-center text-sm text-red-600">
+        <p className="rounded-2xl border border-dashed border-red-300 bg-red-50 p-6 text-center text-sm text-red-600">
           {loadError}
         </p>
       ) : options.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+        <p className="rounded-2xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
           No countries currently have this service in stock. Try again
           shortly.
         </p>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           {options.map((item, i) => (
             <Link
               key={`${item.provider}-${item.countryParam}`}
               href={`/dashboard/services/${params.slug}/${item.countryParam}?provider=${item.provider}`}
-              className={`flex items-center gap-3 px-4 py-3 active:bg-slate-50 ${
+              className={`flex items-center gap-3 px-4 py-3.5 transition active:bg-slate-50 ${
                 i !== 0 ? "border-t border-slate-100" : ""
               }`}
             >
-              <span className="text-xl">{item.flag}</span>
+              <span className="text-2xl">{item.flag}</span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-slate-900">
+                <p className="truncate text-[15px] font-medium text-slate-900">
                   {item.name}
                 </p>
                 <p className="text-xs text-slate-400">
                   {item.count.toLocaleString()} available
                 </p>
               </div>
-              <span className="text-sm font-semibold text-slate-900">
+              <span className="rounded-full bg-brand-light px-2.5 py-1 text-sm font-semibold text-brand">
                 {formatP(item.priceKobo)}
               </span>
               <ChevronRight size={16} className="text-slate-300" />

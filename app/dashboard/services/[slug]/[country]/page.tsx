@@ -111,16 +111,16 @@ export default async function ServiceCountryDetailPage({
         Back
       </Link>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-5 text-center">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
         <div
-          className={`mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl text-xl font-semibold text-white ${colorForLabel(service!.name)}`}
+          className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl text-2xl font-semibold text-white shadow-md ${colorForLabel(service!.name)}`}
         >
           {service!.name.charAt(0).toUpperCase()}
         </div>
         <h1 className="text-lg font-semibold text-slate-900">
           {service!.name} - {flag} {countryName}
         </h1>
-        <p className="mt-1 text-2xl font-bold text-slate-900">
+        <p className="mt-2 text-3xl font-bold text-brand">
           {formatP(priceKobo)}
         </p>
         <p className="mt-1 text-xs text-slate-400">

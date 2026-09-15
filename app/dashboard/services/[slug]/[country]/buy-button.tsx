@@ -31,11 +31,11 @@ export default function BuyButton({
   }
 
   return (
-    <div className="mt-5">
+    <div className="mt-6">
       <button
         onClick={handleBuy}
         disabled={isPending}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand py-3 font-medium text-white transition hover:bg-brand-dark disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand to-violet-600 py-3.5 font-semibold text-white shadow-md shadow-brand/30 transition active:scale-[0.98] disabled:opacity-60"
       >
         {isPending && <Loader2 size={18} className="animate-spin" />}
         Buy Number
