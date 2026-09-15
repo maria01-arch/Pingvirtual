@@ -44,7 +44,7 @@ export default function TopUpForm() {
         <Wallet size={18} />
         <h2 className="font-semibold">Top Up Wallet</h2>
       </div>
-      <p className="mb-4 text-xs text-slate-500">
+      <p className="mb-4 text-xs text-slate-800">
         1P = ₦{NGN_PER_P}. Minimum top-up is {MIN_TOPUP_P}P. Paid securely
         via Paystack.
       </p>

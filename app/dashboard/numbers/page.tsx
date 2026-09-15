@@ -18,8 +18,8 @@ export default async function NumbersPage() {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <PackageOpen size={40} className="mb-3 text-slate-300" />
-        <p className="text-slate-500">There are no active numbers yet.</p>
-        <p className="mt-1 text-sm text-slate-400">
+        <p className="text-slate-800">There are no active numbers yet.</p>
+        <p className="mt-1 text-sm text-slate-700">
           Rent one from the Services tab to see it here.
         </p>
       </div>
@@ -42,7 +42,7 @@ export default async function NumbersPage() {
               {order.status}
             </span>
           </div>
-          <p className="mt-1 text-sm text-slate-500">{order.phone_number}</p>
+          <p className="mt-1 text-sm text-slate-800">{order.phone_number}</p>
           {order.sms_code && (
             <p className="mt-2 text-lg font-bold tracking-wide text-slate-900">
               Code: {order.sms_code}

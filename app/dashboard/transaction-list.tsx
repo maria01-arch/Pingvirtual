@@ -26,7 +26,7 @@ export default async function TransactionList() {
       </div>
 
       {!transactions || transactions.length === 0 ? (
-        <p className="text-sm text-slate-500">No transactions yet.</p>
+        <p className="text-sm text-slate-800">No transactions yet.</p>
       ) : (
         <ul className="divide-y divide-slate-100">
           {transactions.map((tx) => {
@@ -43,7 +43,7 @@ export default async function TransactionList() {
                     <p className="text-sm font-medium text-slate-800">
                       {tx.description ?? tx.type}
                     </p>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-slate-700">
                       {new Date(tx.created_at).toLocaleString()}
                     </p>
                   </div>

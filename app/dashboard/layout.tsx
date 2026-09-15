@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { HelpCircle } from "lucide-react";
 import BottomNav from "./bottom-nav";
 import { formatP } from "@/lib/currency";
 
@@ -32,12 +33,20 @@ export default async function DashboardLayout({
         <span className="text-[17px] font-bold tracking-tight text-slate-900">
           Ping<span className="text-brand">Virtual</span>
         </span>
-        <Link
-          href="/dashboard/wallet"
-          className="rounded-full bg-gradient-to-r from-brand to-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-brand/30"
-        >
-          {formatP(balanceKobo)}
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/dashboard/faq"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-700"
+          >
+            <HelpCircle size={18} />
+          </Link>
+          <Link
+            href="/dashboard/wallet"
+            className="rounded-full bg-gradient-to-r from-brand to-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-brand/30"
+          >
+            {formatP(balanceKobo)}
+          </Link>
+        </div>
       </header>
 
       <main className="mx-auto max-w-2xl px-4 py-5">{children}</main>

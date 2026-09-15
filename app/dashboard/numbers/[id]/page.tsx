@@ -16,7 +16,7 @@ export default async function OrderDetailPage({
 
   const { data: order } = await supabase
     .from("orders")
-    .select("id, service, country, phone_number, status, sms_code")
+    .select("id, service, country, phone_number, status, sms_code, provider, created_at, expires_at")
     .eq("id", params.id)
     .eq("user_id", user!.id)
     .single();
@@ -27,13 +27,13 @@ export default async function OrderDetailPage({
     <div>
       <Link
         href="/dashboard/numbers"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm text-slate-500"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-slate-800"
       >
         <ArrowLeft size={16} />
         My Numbers
       </Link>
 
-      <p className="mb-3 text-center text-sm font-medium text-slate-500">
+      <p className="mb-3 text-center text-sm font-medium text-slate-800">
         {order.service} - {order.country}
       </p>
 
@@ -42,6 +42,9 @@ export default async function OrderDetailPage({
         initialStatus={order.status}
         initialCode={order.sms_code}
         phone={order.phone_number}
+        provider={order.provider}
+        createdAt={order.created_at}
+        expiresAt={order.expires_at}
       />
     </div>
   );

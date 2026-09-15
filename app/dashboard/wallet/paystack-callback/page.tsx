@@ -29,7 +29,7 @@ export default async function PaystackCallbackPage({
       <div className="flex flex-col items-center py-16 text-center">
         <XCircle size={40} className="mb-3 text-red-400" />
         <p className="text-slate-700">{result.error}</p>
-        <p className="mt-1 text-xs text-slate-400">
+        <p className="mt-1 text-xs text-slate-700">
           If money left your account, it will still be credited shortly -
           our system double-checks with Paystack independently.
         </p>

@@ -18,6 +18,7 @@ import {
   getServicesList,
 } from "@/lib/providers/herosms";
 import { MARKUP_MULTIPLIER } from "@/lib/services-catalog";
+import { HEROSMS_MIN_CANCEL_SECONDS } from "@/lib/constants";
 import { usdCostToKobo } from "@/lib/currency";
 import { revalidatePath } from "next/cache";
 
@@ -80,16 +81,19 @@ export async function purchaseNumber(
   // 3. Actually buy the number from the chosen provider.
   let providerOrderId: string;
   let phoneNumber: string;
+  let expiresAt: string | null = null;
 
   try {
     if (provider === "5sim") {
       const order = await buy5sim(country, "whatsapp");
       providerOrderId = String(order.id);
       phoneNumber = order.phone;
+      expiresAt = order.expires ?? null;
     } else {
       const order = await buyHero(serviceCode, country);
       providerOrderId = order.activationId;
       phoneNumber = order.phoneNumber;
+      expiresAt = order.expiresAt;
     }
   } catch (err: any) {
     return { error: `Purchase failed: ${err.message}` };
@@ -121,6 +125,7 @@ export async function purchaseNumber(
       phone_number: phoneNumber,
       status: "pending",
       cost_kobo: costKobo,
+      expires_at: expiresAt,
     })
     .select("id")
     .single();
@@ -171,7 +176,7 @@ export async function refreshOrderStatus(orderId: string) {
       liveStatus = live.status;
     }
   } catch (err: any) {
-    return { error: err.message };
+    return { error: "Couldn't check for a new code right now - try again in a moment." };
   }
 
   const smsCode = freshCode || dbOrder.sms_code || null;
@@ -214,14 +219,22 @@ export async function cancelOrder(orderId: string) {
 
   const { data: dbOrder } = await supabase
     .from("orders")
-    .select("provider, provider_order_id, cost_kobo, status")
+    .select("provider, provider_order_id, cost_kobo, status, created_at")
     .eq("id", orderId)
     .eq("user_id", user.id)
     .single();
 
   if (!dbOrder) return { error: "Order not found." };
   if (dbOrder.status !== "pending") {
-    return { error: "Only pending orders can be cancelled." };
+    return { error: "This number is no longer active." };
+  }
+
+  if (dbOrder.provider === "herosms") {
+    const elapsedSeconds = (Date.now() - new Date(dbOrder.created_at).getTime()) / 1000;
+    const remaining = Math.ceil(HEROSMS_MIN_CANCEL_SECONDS - elapsedSeconds);
+    if (remaining > 0) {
+      return { error: `Please wait ${remaining}s before cancelling this number.` };
+    }
   }
 
   try {
@@ -231,7 +244,7 @@ export async function cancelOrder(orderId: string) {
       await cancelHero(dbOrder.provider_order_id);
     }
   } catch (err: any) {
-    return { error: err.message };
+    return { error: "Couldn't cancel this number right now - please try again in a moment." };
   }
 
   await supabase

@@ -127,6 +127,7 @@ export type HeroSmsOrder = {
   activationId: string;
   phoneNumber: string;
   cost: number;
+  expiresAt: string | null;
 };
 
 export async function buyNumber(
@@ -143,10 +144,17 @@ export async function buyNumber(
     throw new Error(`HeroSMS buy failed: ${data}`);
   }
 
+  // Field name for expiry isn't confirmed from documentation - check a few
+  // common shapes defensively; if none match, expiresAt stays null and the
+  // UI just won't show a countdown (falls back to the auto-refund message).
+  const expiresAt =
+    data.expires ?? data.expiresAt ?? data.expired_at ?? data.expiryDate ?? null;
+
   return {
     activationId: String(data.activationId),
     phoneNumber: String(data.phoneNumber),
     cost: Number(data.activationCost ?? data.cost ?? 0),
+    expiresAt: expiresAt ? String(expiresAt) : null,
   };
 }
 

@@ -3,9 +3,10 @@ import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 import { getProductPrice as get5simPrice, getCountries as get5simCountries } from "@/lib/providers/5sim";
 import { getPricesForService, getCountriesList, getServicesList } from "@/lib/providers/herosms";
-import { MARKUP_MULTIPLIER, colorForLabel } from "@/lib/services-catalog";
+import { MARKUP_MULTIPLIER } from "@/lib/services-catalog";
 import { usdCostToKobo, formatP } from "@/lib/currency";
 import { isoToFlagEmoji } from "@/lib/flag";
+import ServiceIcon from "../../service-icon";
 import BuyButton from "./buy-button";
 
 export default async function ServiceCountryDetailPage({
@@ -72,12 +73,12 @@ export default async function ServiceCountryDetailPage({
       <div>
         <Link
           href={`/dashboard/services/${params.slug}`}
-          className="mb-4 inline-flex items-center gap-1.5 text-sm text-slate-500"
+          className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-slate-700"
         >
           <ArrowLeft size={16} />
           Back
         </Link>
-        <p className="rounded-xl border border-dashed border-red-300 bg-red-50 p-6 text-center text-sm text-red-600">
+        <p className="rounded-2xl border border-dashed border-red-300 bg-red-50 p-6 text-center text-sm text-red-700">
           {loadError}
         </p>
       </div>
@@ -89,12 +90,12 @@ export default async function ServiceCountryDetailPage({
       <div>
         <Link
           href={`/dashboard/services/${params.slug}`}
-          className="mb-4 inline-flex items-center gap-1.5 text-sm text-slate-500"
+          className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-slate-700"
         >
           <ArrowLeft size={16} />
           Back
         </Link>
-        <p className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+        <p className="rounded-2xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-700">
           This just sold out. Go back and pick another country.
         </p>
       </div>
@@ -105,25 +106,23 @@ export default async function ServiceCountryDetailPage({
     <div>
       <Link
         href={`/dashboard/services/${params.slug}`}
-        className="mb-4 inline-flex items-center gap-1.5 text-sm text-slate-500"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-slate-700"
       >
         <ArrowLeft size={16} />
         Back
       </Link>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
-        <div
-          className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl text-2xl font-semibold text-white shadow-md ${colorForLabel(service!.name)}`}
-        >
-          {service!.name.charAt(0).toUpperCase()}
+        <div className="mx-auto mb-4 flex justify-center">
+          <ServiceIcon name={service!.name} size={64} />
         </div>
-        <h1 className="text-lg font-semibold text-slate-900">
+        <h1 className="text-lg font-bold text-slate-900">
           {service!.name} - {flag} {countryName}
         </h1>
         <p className="mt-2 text-3xl font-bold text-brand">
           {formatP(priceKobo)}
         </p>
-        <p className="mt-1 text-xs text-slate-400">
+        <p className="mt-1 text-xs font-medium text-slate-600">
           {count.toLocaleString()} numbers available
         </p>
 
