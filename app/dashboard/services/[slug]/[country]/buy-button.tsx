@@ -8,9 +8,11 @@ import { purchaseNumber } from "@/lib/actions/orders";
 export default function BuyButton({
   product,
   country,
+  provider,
 }: {
   product: string;
   country: string;
+  provider: "5sim" | "herosms";
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +21,7 @@ export default function BuyButton({
   function handleBuy() {
     setError(null);
     startTransition(async () => {
-      const result = await purchaseNumber(product, country);
+      const result = await purchaseNumber(product, country, provider);
       if (result.error) {
         setError(result.error);
         return;

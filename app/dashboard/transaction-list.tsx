@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { ArrowDownCircle, ArrowUpCircle, History } from "lucide-react";
+import { formatP } from "@/lib/currency";
 
 export default async function TransactionList() {
   const supabase = createClient();
@@ -12,7 +13,7 @@ export default async function TransactionList() {
 
   const { data: transactions } = await supabase
     .from("transactions")
-    .select("id, amount_cents, type, description, created_at")
+    .select("id, amount_kobo, type, description, created_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(10);
@@ -29,7 +30,7 @@ export default async function TransactionList() {
       ) : (
         <ul className="divide-y divide-slate-100">
           {transactions.map((tx) => {
-            const isCredit = tx.amount_cents > 0;
+            const isCredit = tx.amount_kobo > 0;
             return (
               <li key={tx.id} className="flex items-center justify-between py-2.5">
                 <div className="flex items-center gap-2">
@@ -52,8 +53,8 @@ export default async function TransactionList() {
                     isCredit ? "text-green-600" : "text-red-500"
                   }`}
                 >
-                  {isCredit ? "+" : "-"}$
-                  {(Math.abs(tx.amount_cents) / 100).toFixed(2)}
+                  {isCredit ? "+" : "-"}
+                  {formatP(Math.abs(tx.amount_kobo))}
                 </span>
               </li>
             );

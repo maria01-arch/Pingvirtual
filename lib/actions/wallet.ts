@@ -2,8 +2,9 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { pToKobo, MIN_TOPUP_P } from "@/lib/currency";
 
-export async function topUpWallet(amountCents: number) {
+export async function topUpWallet(amountKobo: number) {
   const supabase = createClient();
 
   const {
@@ -14,12 +15,12 @@ export async function topUpWallet(amountCents: number) {
     return { error: "Not logged in." };
   }
 
-  if (!Number.isInteger(amountCents) || amountCents <= 0) {
-    return { error: "Enter a valid amount." };
+  if (!Number.isInteger(amountKobo) || amountKobo < pToKobo(MIN_TOPUP_P)) {
+    return { error: `Minimum top-up is ${MIN_TOPUP_P}P.` };
   }
 
   const { error } = await supabase.rpc("topup_wallet", {
-    p_amount_cents: amountCents,
+    p_amount_kobo: amountKobo,
   });
 
   if (error) {

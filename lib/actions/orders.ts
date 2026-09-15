@@ -2,16 +2,32 @@
 
 import { createClient } from "@/lib/supabase/server";
 import {
-  buyActivation,
-  checkActivation,
-  cancelActivation,
-  getProductPrice,
-  getCountries,
+  buyActivation as buy5sim,
+  checkActivation as check5sim,
+  cancelActivation as cancel5sim,
+  getProductPrice as get5simPrice,
+  getCountries as get5simCountries,
 } from "@/lib/providers/5sim";
+import {
+  buyNumber as buyHero,
+  checkStatus as checkHero,
+  cancelActivation as cancelHero,
+  finishActivation as finishHero,
+  findServiceCode,
+  getPricesForService,
+  getCountriesList,
+} from "@/lib/providers/herosms";
 import { POPULAR_SERVICES, MARKUP_MULTIPLIER } from "@/lib/services-catalog";
+import { usdToKobo } from "@/lib/currency";
 import { revalidatePath } from "next/cache";
 
-export async function purchaseNumber(product: string, country: string) {
+type Provider = "5sim" | "herosms";
+
+export async function purchaseNumber(
+  product: string,
+  country: string,
+  provider: Provider
+) {
   const supabase = createClient();
   const {
     data: { user },
@@ -22,53 +38,74 @@ export async function purchaseNumber(product: string, country: string) {
   const service = POPULAR_SERVICES.find((s) => s.product === product);
   if (!service) return { error: "Unknown service." };
 
-  // 1. Get the live price from 5SIM (raw provider cost, in dollars).
-  let priceInfo;
-  try {
-    priceInfo = await getProductPrice(country, product);
-  } catch (err: any) {
-    return { error: `Could not reach 5SIM: ${err.message}` };
+  // 1. Get the live price (raw provider cost, in USD) and a display name.
+  let rawCostUsd: number;
+  let countryName = country;
+
+  if (provider === "5sim") {
+    const priceInfo = await get5simPrice(country, product).catch(() => null);
+    if (!priceInfo || priceInfo.count < 1) {
+      return { error: "No numbers available for this service right now." };
+    }
+    rawCostUsd = priceInfo.cost;
+    const countries = await get5simCountries();
+    countryName = countries.find((c) => c.slug === country)?.name ?? country;
+  } else {
+    const serviceCode = await findServiceCode(product);
+    if (!serviceCode) return { error: "Service not found on HeroSMS." };
+    const prices = await getPricesForService(serviceCode);
+    const match = prices.find((p) => p.countryId === country);
+    if (!match || match.count < 1) {
+      return { error: "No numbers available for this service right now." };
+    }
+    rawCostUsd = match.cost;
+    const countries = await getCountriesList();
+    countryName = countries.find((c) => c.id === country)?.name ?? country;
   }
 
-  if (!priceInfo || priceInfo.count < 1) {
-    return { error: "No numbers available for this service right now." };
-  }
-
-  const costCents = Math.round(priceInfo.cost * 100 * MARKUP_MULTIPLIER);
+  const costKobo = Math.round(usdToKobo(rawCostUsd) * MARKUP_MULTIPLIER);
 
   // 2. Confirm the user can afford it BEFORE spending real provider balance.
   const { data: profile } = await supabase
     .from("profiles")
-    .select("balance_cents")
+    .select("balance_kobo")
     .eq("id", user.id)
     .single();
 
-  if (!profile || profile.balance_cents < costCents) {
+  if (!profile || profile.balance_kobo < costKobo) {
     return { error: "Insufficient wallet balance. Top up and try again." };
   }
 
-  // 3. Actually buy the number from 5SIM.
-  let order;
+  // 3. Actually buy the number from the chosen provider.
+  let providerOrderId: string;
+  let phoneNumber: string;
+
   try {
-    order = await buyActivation(country, product);
+    if (provider === "5sim") {
+      const order = await buy5sim(country, product);
+      providerOrderId = String(order.id);
+      phoneNumber = order.phone;
+    } else {
+      const serviceCode = await findServiceCode(product);
+      const order = await buyHero(serviceCode!, country);
+      providerOrderId = order.activationId;
+      phoneNumber = order.phoneNumber;
+    }
   } catch (err: any) {
     return { error: `Purchase failed: ${err.message}` };
   }
 
   // 4. Deduct the user's wallet balance atomically.
-  const countries = await getCountries();
-  const countryName =
-    countries.find((c) => c.slug === country)?.name ?? country;
-
   const { error: deductError } = await supabase.rpc("deduct_balance", {
-    p_amount_cents: costCents,
+    p_amount_kobo: costKobo,
     p_description: `${service.label} - ${countryName}`,
   });
 
   if (deductError) {
-    // The 5SIM number was bought but we couldn't charge the user - cancel
-    // it immediately so we're not out of pocket.
-    await cancelActivation(order.id).catch(() => {});
+    // The number was bought but we couldn't charge the user - cancel it
+    // immediately so we're not out of pocket.
+    if (provider === "5sim") await cancel5sim(Number(providerOrderId)).catch(() => {});
+    else await cancelHero(providerOrderId).catch(() => {});
     return { error: `Could not charge wallet: ${deductError.message}` };
   }
 
@@ -77,13 +114,13 @@ export async function purchaseNumber(product: string, country: string) {
     .from("orders")
     .insert({
       user_id: user.id,
-      provider: "5sim",
-      provider_order_id: String(order.id),
+      provider,
+      provider_order_id: providerOrderId,
       service: service.label,
       country: countryName,
-      phone_number: order.phone,
+      phone_number: phoneNumber,
       status: "pending",
-      cost_cents: costCents,
+      cost_kobo: costKobo,
     })
     .select("id")
     .single();
@@ -106,34 +143,42 @@ export async function refreshOrderStatus(orderId: string) {
 
   const { data: dbOrder } = await supabase
     .from("orders")
-    .select("provider_order_id, status, cost_cents, service, country, sms_code")
+    .select("provider, provider_order_id, status, cost_kobo, service, country, sms_code")
     .eq("id", orderId)
     .eq("user_id", user.id)
     .single();
 
   if (!dbOrder) return { error: "Order not found." };
   if (dbOrder.status === "cancelled") return { error: null };
-  if (dbOrder.status === "received" && dbOrder.sms_code) {
-    return { error: null }; // already fully settled, nothing to poll
-  }
+  if (dbOrder.status === "received" && dbOrder.sms_code) return { error: null };
 
-  let liveOrder;
+  let liveStatus: "WAITING" | "RECEIVED" | "CANCELLED";
+  let freshCode: string | null;
+
   try {
-    liveOrder = await checkActivation(Number(dbOrder.provider_order_id));
+    if (dbOrder.provider === "5sim") {
+      const live = await check5sim(Number(dbOrder.provider_order_id));
+      freshCode = live.sms?.[0]?.code ?? null;
+      liveStatus =
+        live.status === "RECEIVED"
+          ? "RECEIVED"
+          : live.status === "CANCELED" || live.status === "TIMEOUT"
+          ? "CANCELLED"
+          : "WAITING";
+    } else {
+      const live = await checkHero(dbOrder.provider_order_id);
+      freshCode = live.code;
+      liveStatus = live.status;
+    }
   } catch (err: any) {
     return { error: err.message };
   }
 
-  // Preserve an already-captured code if this particular poll comes back
-  // empty - 5SIM can report status RECEIVED slightly before the code text
-  // is populated, and we never want to overwrite a good code with nothing.
-  const freshCode = liveOrder.sms?.[0]?.code ?? null;
   const smsCode = freshCode || dbOrder.sms_code || null;
-
   const newStatus =
-    liveOrder.status === "RECEIVED" && smsCode
+    liveStatus === "RECEIVED" && smsCode
       ? "received"
-      : liveOrder.status === "CANCELED" || liveOrder.status === "TIMEOUT"
+      : liveStatus === "CANCELLED"
       ? "cancelled"
       : "pending";
 
@@ -142,17 +187,17 @@ export async function refreshOrderStatus(orderId: string) {
     .update({ status: newStatus, sms_code: smsCode, updated_at: new Date().toISOString() })
     .eq("id", orderId);
 
-  // The provider timed the order out or cancelled it on their end (e.g. the
-  // number was already used elsewhere and never delivered a code). Since
-  // this wasn't the user's choice, auto-refund - but only once, on the
-  // transition into "cancelled" (dbOrder.status was still "pending" here).
   let refunded = false;
   if (newStatus === "cancelled" && dbOrder.status === "pending") {
     await supabase.rpc("refund_wallet", {
-      p_amount_cents: dbOrder.cost_cents,
+      p_amount_kobo: dbOrder.cost_kobo,
       p_description: `${dbOrder.service} - ${dbOrder.country} (auto-refund: no code received)`,
     });
     refunded = true;
+  }
+
+  if (newStatus === "received" && dbOrder.provider === "herosms") {
+    await finishHero(dbOrder.provider_order_id).catch(() => {});
   }
 
   revalidatePath("/dashboard/numbers");
@@ -169,7 +214,7 @@ export async function cancelOrder(orderId: string) {
 
   const { data: dbOrder } = await supabase
     .from("orders")
-    .select("provider_order_id, cost_cents, status")
+    .select("provider, provider_order_id, cost_kobo, status")
     .eq("id", orderId)
     .eq("user_id", user.id)
     .single();
@@ -180,7 +225,11 @@ export async function cancelOrder(orderId: string) {
   }
 
   try {
-    await cancelActivation(Number(dbOrder.provider_order_id));
+    if (dbOrder.provider === "5sim") {
+      await cancel5sim(Number(dbOrder.provider_order_id));
+    } else {
+      await cancelHero(dbOrder.provider_order_id);
+    }
   } catch (err: any) {
     return { error: err.message };
   }
@@ -190,9 +239,8 @@ export async function cancelOrder(orderId: string) {
     .update({ status: "cancelled", updated_at: new Date().toISOString() })
     .eq("id", orderId);
 
-  // Refund the wallet.
   await supabase.rpc("refund_wallet", {
-    p_amount_cents: dbOrder.cost_cents,
+    p_amount_kobo: dbOrder.cost_kobo,
     p_description: "Order cancelled - refund",
   });
 

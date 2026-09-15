@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import BottomNav from "./bottom-nav";
+import { formatP } from "@/lib/currency";
 
 export default async function DashboardLayout({
   children,
@@ -19,11 +20,11 @@ export default async function DashboardLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("balance_cents")
+    .select("balance_kobo")
     .eq("id", user.id)
     .single();
 
-  const balanceCents = profile?.balance_cents ?? 0;
+  const balanceKobo = profile?.balance_kobo ?? 0;
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
@@ -33,7 +34,7 @@ export default async function DashboardLayout({
           href="/dashboard/wallet"
           className="rounded-full bg-brand-light px-3 py-1.5 text-sm font-semibold text-brand"
         >
-          ${(balanceCents / 100).toFixed(2)}
+          {formatP(balanceKobo)}
         </Link>
       </header>
 
