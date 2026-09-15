@@ -11,7 +11,14 @@ export default async function ServicesPage({
   searchParams: { q?: string };
 }) {
   const query = (searchParams.q ?? "").toLowerCase().trim();
-  const allServices = await getServicesList();
+
+  let allServices: Awaited<ReturnType<typeof getServicesList>> = [];
+  let loadError: string | null = null;
+  try {
+    allServices = await getServicesList();
+  } catch (err: any) {
+    loadError = err.message ?? "Could not load services.";
+  }
 
   let list;
   let heading;
@@ -48,7 +55,11 @@ export default async function ServicesPage({
 
       <p className="mb-2 px-1 text-sm font-medium text-slate-500">{heading}</p>
 
-      {allServices.length === 0 ? (
+      {loadError ? (
+        <p className="rounded-xl border border-dashed border-red-300 bg-red-50 p-6 text-center text-sm text-red-600">
+          {loadError}
+        </p>
+      ) : allServices.length === 0 ? (
         <p className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
           Couldn't load the service catalog right now. Try again shortly.
         </p>

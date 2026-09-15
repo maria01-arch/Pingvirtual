@@ -13,11 +13,23 @@ export default async function ProductCountriesPage({
 }: {
   params: { slug: string };
 }) {
-  const services = await getServicesList();
-  const service = services.find((s) => s.code === params.slug);
-  if (!service) return notFound();
+  let services: Awaited<ReturnType<typeof getServicesList>> = [];
+  let loadError: string | null = null;
+  try {
+    services = await getServicesList();
+  } catch (err: any) {
+    loadError = err.message ?? "Could not load service info.";
+  }
 
-  const options = await getCountryOptions(params.slug, service.name);
+  const service = services.find((s) => s.code === params.slug);
+  if (!loadError && !service) return notFound();
+
+  const options = loadError
+    ? []
+    : await getCountryOptions(params.slug, service!.name).catch((err) => {
+        loadError = err.message ?? "Could not load pricing.";
+        return [];
+      });
 
   return (
     <div>
@@ -31,16 +43,20 @@ export default async function ProductCountriesPage({
 
       <div className="mb-4 flex items-center gap-3">
         <div
-          className={`flex h-11 w-11 items-center justify-center rounded-xl text-base font-semibold text-white ${colorForLabel(service.name)}`}
+          className={`flex h-11 w-11 items-center justify-center rounded-xl text-base font-semibold text-white ${colorForLabel(service?.name ?? params.slug)}`}
         >
-          {service.name.charAt(0).toUpperCase()}
+          {(service?.name ?? params.slug).charAt(0).toUpperCase()}
         </div>
         <h1 className="text-lg font-semibold text-slate-900">
-          {service.name}
+          {service?.name ?? params.slug}
         </h1>
       </div>
 
-      {options.length === 0 ? (
+      {loadError ? (
+        <p className="rounded-xl border border-dashed border-red-300 bg-red-50 p-6 text-center text-sm text-red-600">
+          {loadError}
+        </p>
+      ) : options.length === 0 ? (
         <p className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
           No countries currently have this service in stock. Try again
           shortly.
