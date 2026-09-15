@@ -18,7 +18,7 @@ import {
   getServicesList,
 } from "@/lib/providers/herosms";
 import { MARKUP_MULTIPLIER } from "@/lib/services-catalog";
-import { usdToKobo } from "@/lib/currency";
+import { usdCostToKobo } from "@/lib/currency";
 import { revalidatePath } from "next/cache";
 
 type Provider = "5sim" | "herosms";
@@ -64,7 +64,7 @@ export async function purchaseNumber(
     countryName = countries.find((c) => c.id === country)?.name ?? country;
   }
 
-  const costKobo = Math.round(usdToKobo(rawCostUsd) * MARKUP_MULTIPLIER);
+  const costKobo = usdCostToKobo(rawCostUsd, MARKUP_MULTIPLIER);
 
   // 2. Confirm the user can afford it BEFORE spending real provider balance.
   const { data: profile } = await supabase

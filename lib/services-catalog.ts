@@ -1,5 +1,5 @@
-// How much we charge the user on top of the raw provider cost. 1.5 = 50% markup.
-export const MARKUP_MULTIPLIER = 1.5;
+// How much we charge the user on top of the raw provider cost. 4.0 = 4x markup.
+export const MARKUP_MULTIPLIER = 4.0;
 
 // Labels only - used to surface a "Popular" shortlist at the top of the
 // Services tab. The actual catalog (700+ services) is fetched live from

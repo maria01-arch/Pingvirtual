@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { getProductPrice as get5simPrice, getCountries as get5simCountries } from "@/lib/providers/5sim";
 import { getPricesForService, getCountriesList, getServicesList } from "@/lib/providers/herosms";
 import { MARKUP_MULTIPLIER, colorForLabel } from "@/lib/services-catalog";
-import { usdToKobo, formatP } from "@/lib/currency";
+import { usdCostToKobo, formatP } from "@/lib/currency";
 import { isoToFlagEmoji } from "@/lib/flag";
 import BuyButton from "./buy-button";
 
@@ -41,7 +41,7 @@ export default async function ServiceCountryDetailPage({
           get5simCountries(),
         ]);
         if (priceInfo && priceInfo.count > 0) {
-          priceKobo = Math.round(usdToKobo(priceInfo.cost) * MARKUP_MULTIPLIER);
+          priceKobo = usdCostToKobo(priceInfo.cost, MARKUP_MULTIPLIER);
           count = priceInfo.count;
         }
         const c = countries.find((c) => c.slug === params.country);
@@ -56,7 +56,7 @@ export default async function ServiceCountryDetailPage({
         ]);
         const match = prices.find((p) => p.countryId === params.country);
         if (match) {
-          priceKobo = Math.round(usdToKobo(match.cost) * MARKUP_MULTIPLIER);
+          priceKobo = usdCostToKobo(match.cost, MARKUP_MULTIPLIER);
           count = match.count;
         }
         const c = countries.find((c) => c.id === params.country);

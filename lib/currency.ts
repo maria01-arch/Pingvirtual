@@ -28,6 +28,17 @@ export function koboToP(kobo: number): number {
   return kobo / KOBO_PER_P;
 }
 
+// Canonical purchase-cost formula - the ONLY place this math should happen,
+// so every page (listing, detail, actual purchase) always agrees exactly.
+// P = ceil( cost_usd * NGN_per_USD * markup / NGN_per_P )
+export function usdCostToP(usdCost: number, markupMultiplier: number): number {
+  return Math.ceil((usdCost * NGN_PER_USD * markupMultiplier) / NGN_PER_P);
+}
+
+export function usdCostToKobo(usdCost: number, markupMultiplier: number): number {
+  return pToKobo(usdCostToP(usdCost, markupMultiplier));
+}
+
 export function formatP(kobo: number): string {
   return `${koboToP(kobo).toFixed(2)}P`;
 }

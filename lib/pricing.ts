@@ -1,6 +1,6 @@
 import { getProductPrice as get5simPrice, getCountries as get5simCountries } from "./providers/5sim";
 import { getPricesForService, getCountriesList } from "./providers/herosms";
-import { usdToKobo } from "./currency";
+import { usdCostToKobo } from "./currency";
 import { isoToFlagEmoji } from "./flag";
 import { MARKUP_MULTIPLIER } from "./services-catalog";
 
@@ -35,7 +35,7 @@ export async function getCountryOptions(
           provider: "5sim",
           name: usa?.name ?? "United States",
           flag: usa ? isoToFlagEmoji(usa.iso) : "🇺🇸",
-          priceKobo: Math.round(usdToKobo(price.cost) * MARKUP_MULTIPLIER),
+          priceKobo: usdCostToKobo(price.cost, MARKUP_MULTIPLIER),
           count: price.count,
         });
       }
@@ -58,7 +58,7 @@ export async function getCountryOptions(
         provider: "herosms",
         name: countryMap.get(p.countryId) ?? p.countryId,
         flag: "🌍",
-        priceKobo: Math.round(usdToKobo(p.cost) * MARKUP_MULTIPLIER),
+        priceKobo: usdCostToKobo(p.cost, MARKUP_MULTIPLIER),
         count: p.count,
       });
     }
