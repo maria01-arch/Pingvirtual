@@ -55,5 +55,7 @@ const DOMAIN_MAP: Record<string, string> = {
 export function iconUrlForService(name: string): string | null {
   const domain = DOMAIN_MAP[name.toLowerCase()];
   if (!domain) return null;
-  return `https://logo.clearbit.com/${domain}?size=128`;
+  // Google's public favicon service - no API key needed, still active as of
+  // this writing (Clearbit's equivalent free logo API shut down Dec 2025).
+  return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
 }
