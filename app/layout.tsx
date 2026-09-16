@@ -27,6 +27,17 @@ export default function RootLayout({
           {`
             var Tawk_API = Tawk_API || {};
             var Tawk_LoadStart = new Date();
+
+            // Must be set BEFORE the embed script loads to take effect.
+            // Mobile gets a bigger vertical offset so the widget clears
+            // our fixed bottom tab bar on the dashboard.
+            Tawk_API.customStyle = {
+              visibility: {
+                desktop: { position: "br", xOffset: 15, yOffset: 15 },
+                mobile: { position: "br", xOffset: 10, yOffset: 90 }
+              }
+            };
+
             (function () {
               var s1 = document.createElement("script");
               var s0 = document.getElementsByTagName("script")[0];
