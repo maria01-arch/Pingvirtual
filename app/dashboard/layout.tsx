@@ -30,9 +30,9 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 pb-24">
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200/80 bg-white/90 px-4 py-3.5 backdrop-blur-md">
-        <span className="flex items-center gap-2 text-[17px] font-bold tracking-tight text-slate-900">
+        <span className="flex items-center gap-2 text-[19px] font-extrabold tracking-tight text-slate-900">
           <img src="/icon-192.png" alt="" className="h-7 w-7 rounded-lg" />
-          Ping<span className="text-brand">Virtual</span>
+          <span>Ping<span className="text-brand">Virtual</span></span>
         </span>
         <div className="flex items-center gap-2">
           <Link
