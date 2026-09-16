@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { Loader2, MessageSquare } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -39,9 +39,7 @@ export default function LoginPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6">
       <div className="mb-8 flex flex-col items-center">
-        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-brand text-white">
-          <MessageSquare size={22} />
-        </div>
+        <img src="/icon-192.png" alt="PingVirtual" className="mb-3 h-14 w-14 rounded-2xl shadow-md" />
         <h1 className="text-2xl font-bold">Welcome back</h1>
       </div>
 

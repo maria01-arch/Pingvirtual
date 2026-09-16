@@ -4,9 +4,7 @@ import { MessageSquare, ShieldCheck, Zap } from "lucide-react";
 export default function Home() {
   return (
     <main className="mx-auto flex max-w-5xl flex-col items-center px-6 py-24 text-center">
-      <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand text-white">
-        <MessageSquare size={28} />
-      </div>
+      <img src="/icon-192.png" alt="PingVirtual" className="mb-6 h-16 w-16 rounded-2xl shadow-lg" />
       <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
         PingVirtual
       </h1>

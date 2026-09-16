@@ -31,6 +31,7 @@ export default function ServiceIcon({
       alt={name}
       width={size}
       height={size}
+      referrerPolicy="no-referrer"
       onError={() => setFailed(true)}
       className="shrink-0 rounded-2xl bg-white object-contain shadow-sm ring-1 ring-slate-100"
       style={{ width: size, height: size }}

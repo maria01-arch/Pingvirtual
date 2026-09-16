@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Sparkles, Search, ShieldCheck } from "lucide-react";
+import { Search, ShieldCheck } from "lucide-react";
 
 const SLIDES = [
   {
-    icon: Sparkles,
+    logo: true,
     title: "Get premium numbers at very low prices",
     subtitle: "with PingVirtual",
     gradient: "from-brand to-violet-600",
@@ -40,23 +40,24 @@ export default function ServicesCarousel() {
         className="flex transition-transform duration-500 ease-out"
         style={{ transform: `translateX(-${index * 100}%)` }}
       >
-        {SLIDES.map((slide, i) => {
-          const Icon = slide.icon;
-          return (
-            <div
-              key={i}
-              className={`flex w-full shrink-0 items-center gap-3 bg-gradient-to-br p-5 text-white ${slide.gradient}`}
-            >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/20">
-                <Icon size={22} />
-              </div>
-              <div className="min-w-0">
-                <p className="font-semibold leading-tight">{slide.title}</p>
-                <p className="mt-0.5 text-sm text-white/90">{slide.subtitle}</p>
-              </div>
+        {SLIDES.map((slide, i) => (
+          <div
+            key={i}
+            className={`flex w-full shrink-0 items-center gap-3 bg-gradient-to-br p-5 text-white ${slide.gradient}`}
+          >
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/20 p-1.5">
+              {slide.logo ? (
+                <img src="/icon-192.png" alt="" className="h-full w-full rounded-full" />
+              ) : (
+                slide.icon && <slide.icon size={22} />
+              )}
             </div>
-          );
-        })}
+            <div className="min-w-0">
+              <p className="font-semibold leading-tight">{slide.title}</p>
+              <p className="mt-0.5 text-sm text-white/90">{slide.subtitle}</p>
+            </div>
+          </div>
+        ))}
       </div>
       <div className="flex justify-center gap-1.5 bg-slate-900/5 py-2">
         {SLIDES.map((_, i) => (

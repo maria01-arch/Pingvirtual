@@ -49,6 +49,9 @@ const SLUG_MAP: Record<string, string> = {
   revolut: "revolut",
   wise: "wise",
   hinge: "hinge",
+  vk: "vk",
+  "vk.com": "vk",
+  threads: "threads",
 };
 
 // Simple Icons' own hosted CDN - returns the icon in its official brand
@@ -56,7 +59,20 @@ const SLUG_MAP: Record<string, string> = {
 // have, so our onError fallback actually fires instead of silently
 // showing a blank/generic result the way Google's favicon service did.
 export function iconUrlForService(name: string): string | null {
-  const slug = SLUG_MAP[name.toLowerCase()];
-  if (!slug) return null;
-  return `https://cdn.simpleicons.org/${slug}`;
+  const lower = name.toLowerCase();
+
+  // Exact match first (covers plain names like "Facebook").
+  if (SLUG_MAP[lower]) {
+    return `https://cdn.simpleicons.org/${SLUG_MAP[lower]}`;
+  }
+
+  // Substring match for combined/compound names HeroSMS sometimes uses,
+  // e.g. "TikTok/Douyin", "Instagram+Threads", "vk.com".
+  for (const key of Object.keys(SLUG_MAP)) {
+    if (lower.includes(key)) {
+      return `https://cdn.simpleicons.org/${SLUG_MAP[key]}`;
+    }
+  }
+
+  return null;
 }
