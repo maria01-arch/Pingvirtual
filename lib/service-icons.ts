@@ -1,61 +1,62 @@
-// Maps a service's display name to its domain, so we can fetch a real logo
-// from a public logo CDN (Clearbit) instead of a plain letter avatar.
-// Only covers well-known apps - the long tail of 700+ HeroSMS services
-// falls back to the gradient letter avatar, which is fine since those are
-// rarely browsed visually (mostly found via search).
-const DOMAIN_MAP: Record<string, string> = {
-  whatsapp: "whatsapp.com",
-  telegram: "telegram.org",
-  facebook: "facebook.com",
-  instagram: "instagram.com",
-  google: "google.com",
-  twitter: "twitter.com",
-  "twitter/x": "twitter.com",
-  tiktok: "tiktok.com",
-  discord: "discord.com",
-  snapchat: "snapchat.com",
-  microsoft: "microsoft.com",
-  apple: "apple.com",
-  amazon: "amazon.com",
-  netflix: "netflix.com",
-  paypal: "paypal.com",
-  tinder: "tinder.com",
-  uber: "uber.com",
-  viber: "viber.com",
-  line: "line.me",
-  wechat: "wechat.com",
-  signal: "signal.org",
-  linkedin: "linkedin.com",
-  pinterest: "pinterest.com",
-  reddit: "reddit.com",
-  spotify: "spotify.com",
-  ebay: "ebay.com",
-  yahoo: "yahoo.com",
-  binance: "binance.com",
-  coinbase: "coinbase.com",
-  steam: "steampowered.com",
-  playstation: "playstation.com",
-  xbox: "xbox.com",
-  bumble: "bumble.com",
-  lyft: "lyft.com",
-  doordash: "doordash.com",
-  skype: "skype.com",
-  aliexpress: "aliexpress.com",
-  shopify: "shopify.com",
-  twitch: "twitch.tv",
-  youtube: "youtube.com",
-  grindr: "grindr.com",
-  venmo: "venmo.com",
-  revolut: "revolut.com",
-  wise: "wise.com",
-  badoo: "badoo.com",
-  hinge: "hinge.co",
+// Maps a service's display name to a Simple Icons slug, so we can fetch a
+// real brand icon. Only covers well-known apps - the long tail of 700+
+// HeroSMS services falls back to the gradient letter avatar, which is fine
+// since those are rarely browsed visually (mostly found via search).
+// Simple Icons slugs - mostly the lowercase name with no spaces, with a
+// few explicit overrides where the brand/slug naming differs.
+const SLUG_MAP: Record<string, string> = {
+  whatsapp: "whatsapp",
+  telegram: "telegram",
+  facebook: "facebook",
+  instagram: "instagram",
+  google: "google",
+  twitter: "x",
+  "twitter/x": "x",
+  tiktok: "tiktok",
+  discord: "discord",
+  snapchat: "snapchat",
+  microsoft: "microsoft",
+  apple: "apple",
+  amazon: "amazon",
+  netflix: "netflix",
+  paypal: "paypal",
+  tinder: "tinder",
+  uber: "uber",
+  viber: "viber",
+  line: "line",
+  wechat: "wechat",
+  signal: "signal",
+  linkedin: "linkedin",
+  pinterest: "pinterest",
+  reddit: "reddit",
+  spotify: "spotify",
+  ebay: "ebay",
+  yahoo: "yahoo",
+  binance: "binance",
+  coinbase: "coinbase",
+  steam: "steam",
+  playstation: "playstation",
+  xbox: "xbox",
+  bumble: "bumble",
+  lyft: "lyft",
+  doordash: "doordash",
+  skype: "skype",
+  aliexpress: "aliexpress",
+  shopify: "shopify",
+  twitch: "twitch",
+  youtube: "youtube",
+  venmo: "venmo",
+  revolut: "revolut",
+  wise: "wise",
+  hinge: "hinge",
 };
 
+// Simple Icons' own hosted CDN - returns the icon in its official brand
+// color by default, and (importantly) a real 404 for anything it doesn't
+// have, so our onError fallback actually fires instead of silently
+// showing a blank/generic result the way Google's favicon service did.
 export function iconUrlForService(name: string): string | null {
-  const domain = DOMAIN_MAP[name.toLowerCase()];
-  if (!domain) return null;
-  // Google's public favicon service - no API key needed, still active as of
-  // this writing (Clearbit's equivalent free logo API shut down Dec 2025).
-  return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+  const slug = SLUG_MAP[name.toLowerCase()];
+  if (!slug) return null;
+  return `https://cdn.simpleicons.org/${slug}`;
 }
