@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 const FAQS = [
   {
     q: "What is P?",
-    a: "P is PingVirtual's wallet currency. 1P = ₦500. All prices on the app are shown in P so they stay simple regardless of which provider or currency is behind the scenes.",
+    a: "P is PingVirtual's wallet currency. 1P = ₦500. All prices on the app are shown in P so they stay simple and consistent no matter what's happening behind the scenes.",
   },
   {
     q: "Why didn't I receive my code?",
@@ -16,7 +16,7 @@ const FAQS = [
   },
   {
     q: "Can I cancel a number I bought?",
-    a: "Yes, as long as it hasn't received a code yet. Numbers routed through HeroSMS have a short mandatory wait (2 minutes) before cancellation is allowed - the app shows a countdown until you can cancel. 5SIM-routed numbers can be cancelled immediately.",
+    a: "Yes, as long as it hasn't received a code yet. Some numbers have a short mandatory wait (up to 2 minutes) before cancellation is allowed - the app shows a countdown when this applies. Others can be cancelled immediately.",
   },
   {
     q: "What happens if my number expires without a code?",
@@ -28,7 +28,27 @@ const FAQS = [
   },
   {
     q: "Can I use the same number twice?",
-    a: "No - once an activation is finished or expires, that specific rented number is released back to the provider's pool and may be reused by someone else. Each purchase gives you a fresh rental.",
+    a: "No - once an activation is finished or expires, that specific rented number is released and may be reused by someone else. Each purchase gives you a fresh rental.",
+  },
+  {
+    q: "Which countries and services are supported?",
+    a: "Hundreds of services across dozens of countries, browsable from the Services tab by category or by search. Availability and pricing update live, so what's in stock can change from moment to moment.",
+  },
+  {
+    q: "How long does it take to receive a number?",
+    a: "Numbers are issued instantly after purchase. How quickly the SMS code itself arrives depends on the destination service, usually within seconds to a couple of minutes.",
+  },
+  {
+    q: "Why does the price differ for the same service in different countries?",
+    a: "Pricing reflects real-time cost and availability, which varies by country and fluctuates with demand - the same way phone and data plans differ by region.",
+  },
+  {
+    q: "Do I need the PingVirtual app, or does the website work fine?",
+    a: "The website works fully on mobile - no app download needed. For quicker access, you can add PingVirtual to your home screen from your browser's menu.",
+  },
+  {
+    q: "How do I contact support?",
+    a: "Use the chat bubble in the bottom corner of the app, or email support@xchord.space.",
   },
 ];
 

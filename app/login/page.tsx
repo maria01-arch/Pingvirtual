@@ -1,19 +1,34 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2 } from "lucide-react";
 
-export default function LoginPage() {
+const XCLONE_NAME = process.env.NEXT_PUBLIC_XCLONE_NAME || "your other account";
+
+const BRIDGE_ERROR_MESSAGES: Record<string, string> = {
+  missing_params: "Sign-in link was incomplete. Please try again.",
+  state_mismatch: "That sign-in link expired or was already used. Please try again.",
+  invalid_token: "Could not verify your identity. Please try again.",
+  sign_in_failed: "Something went wrong signing you in. Please try again.",
+};
+
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const bridgeErrorCode = searchParams.get("error");
+  const bridgeError = bridgeErrorCode
+    ? BRIDGE_ERROR_MESSAGES[bridgeErrorCode] ?? "Sign-in failed. Please try again."
+    : null;
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -42,6 +57,12 @@ export default function LoginPage() {
         <img src="/icon-192.png" alt="PingVirtual" className="mb-3 h-14 w-14 rounded-2xl shadow-md" />
         <h1 className="text-2xl font-bold">Welcome back</h1>
       </div>
+
+      {bridgeError && (
+        <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+          {bridgeError}
+        </p>
+      )}
 
       <form onSubmit={handleLogin} className="space-y-4">
         <div>
@@ -89,5 +110,13 @@ export default function LoginPage() {
         </Link>
       </p>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   );
 }
