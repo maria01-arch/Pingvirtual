@@ -177,13 +177,15 @@ export async function checkStatus(activationId: string): Promise<HeroSmsStatus> 
   }
 
   // Try every plausible field name/shape we can think of for the code.
+  // Confirmed real shape from HeroSMS: { data: { code, text, ... }, sms: { code, text, ... }, call: null }
   const code =
+    data.sms?.code ??
+    data.data?.code ??
     data.smsCode ??
     data.code ??
     data.sms_code ??
     data.otp ??
     data.text ??
-    (Array.isArray(data.sms) ? data.sms[0]?.code ?? data.sms[0]?.text : null) ??
     null;
 
   const statusField = data.status ?? data.activationStatus ?? "";
