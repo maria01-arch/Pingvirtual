@@ -159,6 +159,7 @@ export async function refreshOrderStatus(orderId: string) {
 
   let liveStatus: "WAITING" | "RECEIVED" | "CANCELLED";
   let freshCode: string | null;
+  let debugRaw: unknown = null;
 
   try {
     if (dbOrder.provider === "5sim") {
@@ -170,10 +171,12 @@ export async function refreshOrderStatus(orderId: string) {
           : live.status === "CANCELED" || live.status === "TIMEOUT"
           ? "CANCELLED"
           : "WAITING";
+      debugRaw = live;
     } else {
       const live = await checkHero(dbOrder.provider_order_id);
       freshCode = live.code;
       liveStatus = live.status;
+      debugRaw = { queriedActivationId: dbOrder.provider_order_id, response: live.raw };
     }
   } catch (err: any) {
     return { error: "Couldn't check for a new code right now - try again in a moment." };
@@ -207,7 +210,9 @@ export async function refreshOrderStatus(orderId: string) {
 
   revalidatePath("/dashboard/numbers");
   revalidatePath("/dashboard/wallet");
-  return { error: null, status: newStatus, smsCode, refunded };
+  // debugOnly is temporary - lets us see HeroSMS's exact raw response while
+  // we track down why real codes weren't being picked up. Remove once fixed.
+  return { error: null, status: newStatus, smsCode, refunded, debugRaw: newStatus === "pending" ? debugRaw : undefined };
 }
 
 export async function cancelOrder(orderId: string) {

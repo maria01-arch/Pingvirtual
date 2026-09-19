@@ -161,6 +161,7 @@ export async function buyNumber(
 export type HeroSmsStatus = {
   status: "WAITING" | "RECEIVED" | "CANCELLED";
   code: string | null;
+  raw: unknown; // temporary - lets us see exactly what HeroSMS actually sends back
 };
 
 export async function checkStatus(activationId: string): Promise<HeroSmsStatus> {
@@ -169,18 +170,40 @@ export async function checkStatus(activationId: string): Promise<HeroSmsStatus> 
   // Handle both a JSON shape and the legacy "STATUS_OK:1234" text shape.
   if (typeof data === "string") {
     if (data.startsWith("STATUS_OK:")) {
-      return { status: "RECEIVED", code: data.split(":")[1] };
+      return { status: "RECEIVED", code: data.split(":")[1], raw: data };
     }
-    if (data.startsWith("STATUS_CANCEL")) return { status: "CANCELLED", code: null };
-    return { status: "WAITING", code: null };
+    if (data.startsWith("STATUS_CANCEL")) return { status: "CANCELLED", code: null, raw: data };
+    return { status: "WAITING", code: null, raw: data };
   }
 
-  const code = data.smsCode ?? data.code ?? null;
-  if (data.status === "STATUS_OK" || (code && code.length > 0)) {
-    return { status: "RECEIVED", code };
+  // Try every plausible field name/shape we can think of for the code.
+  const code =
+    data.smsCode ??
+    data.code ??
+    data.sms_code ??
+    data.otp ??
+    data.text ??
+    (Array.isArray(data.sms) ? data.sms[0]?.code ?? data.sms[0]?.text : null) ??
+    null;
+
+  const statusField = data.status ?? data.activationStatus ?? "";
+
+  if (
+    statusField === "STATUS_OK" ||
+    statusField === "RECEIVED" ||
+    statusField === "6" ||
+    (code && String(code).length > 0)
+  ) {
+    return { status: "RECEIVED", code: code ? String(code) : null, raw: data };
   }
-  if (data.status === "STATUS_CANCEL") return { status: "CANCELLED", code: null };
-  return { status: "WAITING", code: null };
+  if (
+    statusField === "STATUS_CANCEL" ||
+    statusField === "CANCELLED" ||
+    statusField === "8"
+  ) {
+    return { status: "CANCELLED", code: null, raw: data };
+  }
+  return { status: "WAITING", code: null, raw: data };
 }
 
 // status: 1 = mark ready, 3 = request another code, 6 = complete, 8 = cancel

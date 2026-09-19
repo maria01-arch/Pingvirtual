@@ -37,6 +37,7 @@ export default function OrderStatus({
   const [wasRefunded, setWasRefunded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [debugRaw, setDebugRaw] = useState<unknown>(null);
   const [isPending, startTransition] = useTransition();
 
   const needsPolling = status === "pending" || (status === "received" && !code);
@@ -59,6 +60,7 @@ export default function OrderStatus({
         if (result.status) setStatus(result.status);
         if (result.smsCode) setCode(result.smsCode);
         if (result.refunded) setWasRefunded(true);
+        if ("debugRaw" in result) setDebugRaw(result.debugRaw);
       });
     }, 5000);
     return () => clearInterval(interval);
@@ -102,6 +104,7 @@ export default function OrderStatus({
       if (result.status) setStatus(result.status);
       if (result.smsCode) setCode(result.smsCode);
       if (result.refunded) setWasRefunded(true);
+      if ("debugRaw" in result) setDebugRaw(result.debugRaw);
     });
   }
 
@@ -201,6 +204,20 @@ export default function OrderStatus({
       )}
 
       {error && <p className="mt-3 text-sm font-medium text-red-600">{error}</p>}
+
+      {/* Temporary - shows HeroSMS's raw status response while we track
+          down why some received codes weren't being picked up. Tap to
+          expand only if a code seems to be missing. */}
+      {needsPolling && debugRaw != null && (
+        <details className="mt-4 text-left">
+          <summary className="cursor-pointer text-xs font-medium text-slate-500">
+            Technical details (for troubleshooting)
+          </summary>
+          <pre className="mt-2 overflow-x-auto rounded-lg bg-slate-50 p-3 text-[10px] text-slate-700">
+            {JSON.stringify(debugRaw, null, 2)}
+          </pre>
+        </details>
+      )}
     </div>
   );
 }
