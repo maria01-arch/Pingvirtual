@@ -32,7 +32,7 @@ export default async function NumbersPage() {
         <Link
           key={order.id}
           href={`/dashboard/numbers/${order.id}`}
-          className="block rounded-xl border border-slate-200 bg-white p-4"
+          className="block rounded-2xl border border-slate-200/70 bg-white/80 p-4 shadow-sm backdrop-blur-sm transition duration-200 active:scale-[0.99]"
         >
           <div className="flex items-center justify-between">
             <p className="font-medium text-slate-900">

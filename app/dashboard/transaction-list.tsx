@@ -19,7 +19,7 @@ export default async function TransactionList() {
     .limit(10);
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5">
+    <div className="rounded-2xl border border-slate-200/70 bg-white/80 p-5 shadow-sm backdrop-blur-sm">
       <div className="mb-3 flex items-center gap-2 text-slate-700">
         <History size={18} />
         <h2 className="font-semibold">Recent Activity</h2>

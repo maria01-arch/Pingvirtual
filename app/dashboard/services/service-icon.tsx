@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { iconUrlForService } from "@/lib/service-icons";
+import { iconInfoForService } from "@/lib/service-icons";
 import { colorForLabel } from "@/lib/services-catalog";
 
 export default function ServiceIcon({
@@ -12,13 +12,13 @@ export default function ServiceIcon({
   size?: number;
 }) {
   const [failed, setFailed] = useState(false);
-  const url = iconUrlForService(name);
+  const info = iconInfoForService(name);
 
-  if (!url || failed) {
+  if (!info || failed) {
     return (
       <div
         style={{ width: size, height: size }}
-        className={`flex shrink-0 items-center justify-center rounded-2xl text-base font-semibold text-white shadow-sm ${colorForLabel(name)}`}
+        className={`flex shrink-0 items-center justify-center rounded-2xl text-base font-semibold text-white shadow-sm transition-transform duration-200 ${colorForLabel(name)}`}
       >
         {name.charAt(0).toUpperCase()}
       </div>
@@ -26,15 +26,17 @@ export default function ServiceIcon({
   }
 
   return (
-    <img
-      src={url}
-      alt={name}
-      width={size}
-      height={size}
-      referrerPolicy="no-referrer"
-      onError={() => setFailed(true)}
-      className="shrink-0 rounded-2xl bg-white object-contain shadow-sm ring-1 ring-slate-100"
-      style={{ width: size, height: size }}
-    />
+    <div
+      style={{ width: size, height: size, backgroundColor: info.color }}
+      className="flex shrink-0 items-center justify-center rounded-2xl p-2.5 shadow-sm transition-transform duration-200"
+    >
+      <img
+        src={info.url}
+        alt={name}
+        referrerPolicy="no-referrer"
+        onError={() => setFailed(true)}
+        className="h-full w-full object-contain"
+      />
+    </div>
   );
 }

@@ -7,13 +7,14 @@ import ServicesCarousel from "./services-carousel";
 
 const SEARCH_RESULT_LIMIT = 60;
 const SHELF_LIMIT = 8;
-const CATEGORY_FULL_LIMIT = 100;
+const CATEGORY_FULL_LIMIT = 200;
+const OTHER_LABEL = "Other Services";
 
 function ServiceRow({ code, name }: { code: string; name: string }) {
   return (
     <Link
       href={`/dashboard/services/${code}`}
-      className="flex items-center gap-3 px-4 py-3 transition active:bg-slate-50"
+      className="flex items-center gap-3 px-4 py-3.5 transition duration-200 active:scale-[0.99] active:bg-slate-50/80"
     >
       <ServiceIcon name={name} size={44} />
       <p className="flex-1 truncate text-[15px] font-medium text-slate-900">
@@ -21,6 +22,18 @@ function ServiceRow({ code, name }: { code: string; name: string }) {
       </p>
       <ChevronRight size={16} className="text-slate-400" />
     </Link>
+  );
+}
+
+function ServiceListCard({ items }: { items: { code: string; name: string }[] }) {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-slate-200/70 bg-white/80 shadow-sm backdrop-blur-sm">
+      {items.map((item, i) => (
+        <div key={item.code} className={i !== 0 ? "border-t border-slate-100" : ""}>
+          <ServiceRow code={item.code} name={item.name} />
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -51,7 +64,7 @@ export default async function ServicesPage({
         name="q"
         defaultValue={searchParams.q ?? ""}
         placeholder={`Search ${allServices.length || "700+"} services`}
-        className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-slate-900 shadow-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+        className="w-full rounded-2xl border border-slate-200/70 bg-white/80 py-3 pl-11 pr-4 text-sm text-slate-900 shadow-sm backdrop-blur-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20"
       />
     </form>
   );
@@ -85,23 +98,20 @@ export default async function ServicesPage({
             name.
           </p>
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            {results.map((item, i) => (
-              <div key={item.code} className={i !== 0 ? "border-t border-slate-100" : ""}>
-                <ServiceRow code={item.code} name={item.name} />
-              </div>
-            ))}
-          </div>
+          <ServiceListCard items={results} />
         )}
       </div>
     );
   }
 
-  // --- Single category mode ---
+  // --- Single category mode (including "Other Services") ---
   if (activeCategory) {
+    const isOther = activeCategory === OTHER_LABEL;
     const cat = CATEGORIES.find((c) => c.label === activeCategory);
     const results = allServices
-      .filter((s) => categoryForName(s.name) === activeCategory)
+      .filter((s) =>
+        isOther ? categoryForName(s.name) === null : categoryForName(s.name) === activeCategory
+      )
       .slice(0, CATEGORY_FULL_LIMIT);
 
     return (
@@ -111,18 +121,12 @@ export default async function ServicesPage({
           ← All categories
         </Link>
         <p className="mb-2 px-1 text-sm font-semibold text-slate-800">
-          {cat?.icon} {activeCategory}
+          {isOther ? "📦" : cat?.icon} {activeCategory}
         </p>
         {results.length === 0 ? (
           <p className="px-1 text-sm text-slate-700">No services found.</p>
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            {results.map((item, i) => (
-              <div key={item.code} className={i !== 0 ? "border-t border-slate-100" : ""}>
-                <ServiceRow code={item.code} name={item.name} />
-              </div>
-            ))}
-          </div>
+          <ServiceListCard items={results} />
         )}
       </div>
     );
@@ -130,9 +134,15 @@ export default async function ServicesPage({
 
   // --- Default landing view ---
   const shelves = CATEGORIES.map((cat) => ({
-    ...cat,
+    label: cat.label,
+    icon: cat.icon,
     items: allServices.filter((s) => categoryForName(s.name) === cat.label),
   })).filter((shelf) => shelf.items.length > 0);
+
+  const otherItems = allServices.filter((s) => categoryForName(s.name) === null);
+  if (otherItems.length > 0) {
+    shelves.push({ label: OTHER_LABEL, icon: "📦", items: otherItems });
+  }
 
   return (
     <div>
@@ -144,7 +154,7 @@ export default async function ServicesPage({
           <Link
             key={cat.label}
             href={`/dashboard/services?category=${encodeURIComponent(cat.label)}`}
-            className="flex shrink-0 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-800 shadow-sm active:bg-slate-50"
+            className="flex shrink-0 items-center gap-1.5 rounded-full border border-slate-200/70 bg-white/80 px-3.5 py-2 text-sm font-medium text-slate-800 shadow-sm backdrop-blur-sm transition active:scale-95 active:bg-slate-50"
           >
             <span>{cat.icon}</span>
             {cat.label}
@@ -168,18 +178,12 @@ export default async function ServicesPage({
                 </Link>
               )}
             </div>
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              {cat.items.slice(0, SHELF_LIMIT).map((item, i) => (
-                <div key={item.code} className={i !== 0 ? "border-t border-slate-100" : ""}>
-                  <ServiceRow code={item.code} name={item.name} />
-                </div>
-              ))}
-            </div>
+            <ServiceListCard items={cat.items.slice(0, SHELF_LIMIT)} />
           </div>
         ))}
       </div>
 
-      <p className="mt-8 rounded-2xl bg-white p-4 text-center text-sm font-medium text-slate-800 shadow-sm">
+      <p className="mt-8 rounded-2xl bg-white/80 p-4 text-center text-sm font-medium text-slate-800 shadow-sm backdrop-blur-sm">
         Can't find what you're looking for? Search above to browse all{" "}
         {allServices.length.toLocaleString()} available services.
       </p>

@@ -13,7 +13,7 @@ export default async function WalletPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4">
+      <div className="flex items-center justify-between rounded-2xl border border-slate-200/70 bg-white/80 p-4 shadow-sm backdrop-blur-sm transition duration-200 active:scale-[0.99]">
         <div>
           <p className="text-xs text-slate-700">Signed in as</p>
           <p className="text-sm font-medium text-slate-800">{user?.email}</p>

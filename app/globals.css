@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  scroll-behavior: smooth;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* Fallback in case Tawk's customStyle API doesn't fully apply in time -
    keeps the chat bubble clear of our fixed bottom tab bar on mobile. */
 @media (max-width: 640px) {
