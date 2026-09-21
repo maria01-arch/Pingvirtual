@@ -24,6 +24,16 @@ import { revalidatePath } from "next/cache";
 
 type Provider = "5sim" | "herosms";
 
+function friendlyPurchaseError(raw: string): string {
+  if (raw.includes("NO_NUMBERS") || raw.includes("Numbers Not Found")) {
+    return "This just sold out. Go back and try another country.";
+  }
+  if (raw.includes("NO_BALANCE") || raw.includes("BAD_KEY")) {
+    return "This service is temporarily unavailable. Please try again shortly.";
+  }
+  return "Purchase failed. Please try again.";
+}
+
 export async function purchaseNumber(
   serviceCode: string,
   country: string,
@@ -96,7 +106,7 @@ export async function purchaseNumber(
       expiresAt = order.expiresAt;
     }
   } catch (err: any) {
-    return { error: `Purchase failed: ${err.message}` };
+    return { error: friendlyPurchaseError(err.message ?? "") };
   }
 
   // 4. Deduct the user's wallet balance atomically.
@@ -178,7 +188,6 @@ export async function refreshOrderStatus(orderId: string) {
 
   let liveStatus: "WAITING" | "RECEIVED" | "CANCELLED";
   let freshCode: string | null;
-  let debugRaw: unknown = null;
 
   try {
     if (dbOrder.provider === "5sim") {
@@ -190,12 +199,10 @@ export async function refreshOrderStatus(orderId: string) {
           : live.status === "CANCELED" || live.status === "TIMEOUT"
           ? "CANCELLED"
           : "WAITING";
-      debugRaw = live;
     } else {
       const live = await checkHero(dbOrder.provider_order_id);
       freshCode = live.code;
       liveStatus = live.status;
-      debugRaw = { queriedActivationId: dbOrder.provider_order_id, response: live.raw };
     }
   } catch (err: any) {
     return { error: "Couldn't check for a new code right now - try again in a moment." };
@@ -229,9 +236,7 @@ export async function refreshOrderStatus(orderId: string) {
 
   revalidatePath("/dashboard/numbers");
   revalidatePath("/dashboard/wallet");
-  // debugOnly is temporary - lets us see HeroSMS's exact raw response while
-  // we track down why real codes weren't being picked up. Remove once fixed.
-  return { error: null, status: newStatus, smsCode, refunded, debugRaw: newStatus === "pending" ? debugRaw : undefined };
+  return { error: null, status: newStatus, smsCode, refunded };
 }
 
 export async function cancelOrder(orderId: string) {
