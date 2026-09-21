@@ -102,7 +102,6 @@ export default function OrderStatus({
       if (result.status) setStatus(result.status);
       if (result.smsCode) setCode(result.smsCode);
       if (result.refunded) setWasRefunded(true);
-      if ("debugRaw" in result) setDebugRaw(result.debugRaw);
     });
   }
 
