@@ -18,7 +18,7 @@ import {
   getServicesList,
 } from "@/lib/providers/herosms";
 import { MARKUP_MULTIPLIER } from "@/lib/services-catalog";
-import { HEROSMS_MIN_CANCEL_SECONDS } from "@/lib/constants";
+import { HEROSMS_MIN_CANCEL_SECONDS, MAX_PENDING_MINUTES } from "@/lib/constants";
 import { usdCostToKobo } from "@/lib/currency";
 import { revalidatePath } from "next/cache";
 
@@ -148,7 +148,7 @@ export async function refreshOrderStatus(orderId: string) {
 
   const { data: dbOrder } = await supabase
     .from("orders")
-    .select("provider, provider_order_id, status, cost_kobo, service, country, sms_code")
+    .select("provider, provider_order_id, status, cost_kobo, service, country, sms_code, created_at")
     .eq("id", orderId)
     .eq("user_id", user.id)
     .single();
@@ -156,6 +156,25 @@ export async function refreshOrderStatus(orderId: string) {
   if (!dbOrder) return { error: "Order not found." };
   if (dbOrder.status === "cancelled") return { error: null };
   if (dbOrder.status === "received" && dbOrder.sms_code) return { error: null };
+
+  // Safety net: providers can eventually stop recognizing very old
+  // activation ids entirely, leaving a check permanently failing instead of
+  // resolving. Past this age, just auto-refund rather than trust the
+  // provider to ever answer again.
+  const ageMinutes = (Date.now() - new Date(dbOrder.created_at).getTime()) / 60000;
+  if (ageMinutes > MAX_PENDING_MINUTES) {
+    await supabase
+      .from("orders")
+      .update({ status: "cancelled", updated_at: new Date().toISOString() })
+      .eq("id", orderId);
+    await supabase.rpc("refund_wallet", {
+      p_amount_kobo: dbOrder.cost_kobo,
+      p_description: `${dbOrder.service} - ${dbOrder.country} (auto-refund: no response after ${MAX_PENDING_MINUTES} minutes)`,
+    });
+    revalidatePath("/dashboard/numbers");
+    revalidatePath("/dashboard/wallet");
+    return { error: null, status: "cancelled", smsCode: null, refunded: true };
+  }
 
   let liveStatus: "WAITING" | "RECEIVED" | "CANCELLED";
   let freshCode: string | null;
